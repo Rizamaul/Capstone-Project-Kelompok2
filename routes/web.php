@@ -18,3 +18,11 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::get('/dosen/dashboard', function () {
+    return view('dosen.dashboard');
+});
+
+Route::get('/dosen/lowongan/create', function () {
+    return view('dosen.lowongan.create'); 
+});
