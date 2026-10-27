@@ -26,3 +26,11 @@ Route::get('/dosen/dashboard', function () {
 Route::get('/dosen/lowongan/create', function () {
     return view('dosen.lowongan.create'); 
 });
+
+Route::get('/dosen/timesheet', function () {
+    return view('dosen.timesheet.index');
+});
+
+Route::get('/dosen/timesheet/detail', function () {
+    return view('dosen.timesheet.detail');
+});
