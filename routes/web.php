@@ -73,11 +73,29 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/dashboard', [DosenDashboard::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/lowongan', [DosenLowongan::class, 'index'])
+        ->name('lowongan.index');
+
     Route::get('/lowongan/create', [DosenLowongan::class, 'create'])
         ->name('lowongan.create');
 
     Route::post('/lowongan', [DosenLowongan::class, 'store'])
         ->name('lowongan.store');
+
+    Route::get('/lowongan/{id}', [DosenLowongan::class, 'show'])
+        ->name('lowongan.show');
+
+    Route::get('/lowongan/{id}/edit', [DosenLowongan::class, 'edit'])
+        ->name('lowongan.edit');
+
+    Route::put('/lowongan/{id}', [DosenLowongan::class, 'update'])
+        ->name('lowongan.update');
+
+    Route::patch('/lowongan/{id}/status', [DosenLowongan::class, 'toggleStatus'])
+        ->name('lowongan.toggle-status');
+
+    Route::delete('/lowongan/{id}', [DosenLowongan::class, 'destroy'])
+        ->name('lowongan.destroy');
 
     Route::get('/timesheet', [DosenTimesheet::class, 'index'])
         ->name('timesheet');
