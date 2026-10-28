@@ -56,6 +56,9 @@ Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::get('/status', [MahasiswaStatus::class, 'index'])
         ->name('status');
 
+    Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
+        ->name('pendaftar.index');
+
     Route::get('/timesheet', [MahasiswaTimesheet::class, 'index'])
         ->name('timesheet');
 
