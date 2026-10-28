@@ -1,8 +1,101 @@
 @extends('layouts.mahasiswa')
-@section('title','Dashboard')
+@section('title', 'Dashboard')
+
 @section('content')
-<div class="mb-8 rounded-3xl bg-gradient-to-r from-[#173F82] to-[#2873CF] p-6 text-white shadow-sm sm:p-9"><p class="mb-3 text-xs font-bold uppercase tracking-[.2em] text-blue-100">Selamat datang kembali</p><div class="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><h1 class="max-w-2xl text-2xl font-extrabold leading-tight sm:text-3xl">Semua Langkah, Satu Ruang Kerja.</h1><p class="mt-3 max-w-xl text-sm leading-6 text-blue-100">Lihat pengumuman asisten praktikum, pahami kriterianya, lalu pantau statusmu tanpa menebak-nebak.</p></div><a href="/mahasiswa/lowongan" class="inline-flex w-fit items-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#2058B2] hover:bg-blue-50">Jelajahi Lowongan <span class="ml-2">→</span></a></div></div>
-<div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">@foreach([['Pengumuman Aktif','2','Bisa dilihat mahasiswa','▤'],['Pendaftaran Saya','1','Dalam seluruh periode','♙'],['Jam Disetujui','6,5 jam','Dalam seluruh periode','◷'],['Menunggu Review','1','Timesheet diajukan','◴']] as $stat)<div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div class="flex items-center justify-between"><span class="text-sm font-semibold text-slate-600">{{ $stat[0] }}</span><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-lg text-[#2058B2]">{{ $stat[3] }}</span></div><p class="mt-4 text-3xl font-extrabold tracking-tight">{{ $stat[1] }}</p><p class="mt-1 text-xs text-slate-500">{{ $stat[2] }}</p></div>@endforeach</div>
-<div class="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end"><div><h2 class="text-xl font-extrabold">Pilihan Pengumuman Lowongan Terbaru</h2><p class="mt-1 text-sm text-slate-500">Syarat dan kriteria selalu tampil sebelum mendaftar.</p></div><a href="/mahasiswa/lowongan" class="text-sm font-bold text-[#2058B2] hover:underline">Lihat semua →</a></div>
-<div class="grid gap-4 xl:grid-cols-2">@foreach($lowongans as $lowongan)<article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"><div class="flex flex-col justify-between gap-4 sm:flex-row"><div><span class="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2058B2]">{{ $lowongan['kode'] }} · {{ $lowongan['sks'] }} SKS</span><h3 class="mt-3 text-lg font-extrabold">{{ $lowongan['nama'] }}</h3><p class="mt-1 text-sm text-slate-500">Dosen: {{ $lowongan['dosen'] }}</p></div><span class="h-fit w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">Pendaftaran Dibuka</span></div><div class="mt-5 grid grid-cols-3 gap-3 border-y border-slate-100 py-4 text-sm"><div><p class="text-xs text-slate-500">Kuota</p><p class="mt-1 font-bold">{{ $lowongan['terisi'] }}/{{ $lowongan['kuota'] }} asisten</p></div><div><p class="text-xs text-slate-500">Tenggat</p><p class="mt-1 font-bold">{{ $lowongan['tenggat'] }}</p></div><div><p class="text-xs text-slate-500">Jadwal</p><p class="mt-1 font-bold">{{ $lowongan['jadwal'] }}</p></div></div><a href="/mahasiswa/lowongan/{{ $lowongan['id'] }}" class="mt-4 inline-flex text-sm font-bold text-[#2058B2] hover:underline">Lihat detail →</a></article>@endforeach</div>
+
+{{-- ===== Hero Banner ===== --}}
+<div class="mb-8 rounded-3xl bg-gradient-to-r from-[#173F82] to-[#2873CF] p-6 text-white shadow-sm sm:p-9">
+    <p class="mb-3 text-xs font-bold uppercase tracking-[.2em] text-blue-100">Selamat datang kembali</p>
+    <div class="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+        <div>
+            <h1 class="max-w-2xl text-2xl font-extrabold leading-tight sm:text-3xl">
+                Semua Langkah, Satu Ruang Kerja.
+            </h1>
+            <p class="mt-3 max-w-xl text-sm leading-6 text-blue-100">
+                Lihat pengumuman asisten praktikum, pahami kriterianya, lalu pantau statusmu tanpa menebak-nebak.
+            </p>
+        </div>
+        <a href="{{ route('mahasiswa.lowongan.index') }}"
+           class="inline-flex w-fit items-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#2058B2] hover:bg-blue-50">
+            Jelajahi Lowongan <span class="ml-2">→</span>
+        </a>
+    </div>
+</div>
+
+{{-- ===== Kartu Statistik ===== --}}
+<div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    @foreach([
+        ['Pengumuman Aktif', '2',      'Bisa dilihat mahasiswa', '▤'],
+        ['Pendaftaran Saya', '1',      'Dalam seluruh periode',  '♙'],
+        ['Jam Disetujui',   '6,5 jam', 'Dalam seluruh periode',  '◷'],
+        ['Menunggu Review',  '1',      'Timesheet diajukan',     '◴'],
+    ] as $stat)
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold text-slate-600">{{ $stat[0] }}</span>
+            <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-lg text-[#2058B2]">
+                {{ $stat[3] }}
+            </span>
+        </div>
+        <p class="mt-4 text-3xl font-extrabold tracking-tight">{{ $stat[1] }}</p>
+        <p class="mt-1 text-xs text-slate-500">{{ $stat[2] }}</p>
+    </div>
+    @endforeach
+</div>
+
+{{-- ===== Lowongan Terbaru ===== --}}
+<div class="mb-4 flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
+    <div>
+        <h2 class="text-xl font-extrabold">Pilihan Pengumuman Lowongan Terbaru</h2>
+        <p class="mt-1 text-sm text-slate-500">Syarat dan kriteria selalu tampil sebelum mendaftar.</p>
+    </div>
+    <a href="{{ route('mahasiswa.lowongan.index') }}"
+       class="text-sm font-bold text-[#2058B2] hover:underline">
+        Lihat semua →
+    </a>
+</div>
+
+<div class="grid gap-4 xl:grid-cols-2">
+    @foreach($lowongans as $lowongan)
+    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+
+        {{-- Header kartu --}}
+        <div class="flex flex-col justify-between gap-4 sm:flex-row">
+            <div>
+                <span class="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-bold text-[#2058B2]">
+                    {{ $lowongan['kode'] }} · {{ $lowongan['sks'] }} SKS
+                </span>
+                <h3 class="mt-3 text-lg font-extrabold">{{ $lowongan['nama'] }}</h3>
+                <p class="mt-1 text-sm text-slate-500">Dosen: {{ $lowongan['dosen'] }}</p>
+            </div>
+            <span class="h-fit w-fit rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700">
+                Pendaftaran Dibuka
+            </span>
+        </div>
+
+        {{-- Detail singkat --}}
+        <div class="mt-5 grid grid-cols-3 gap-3 border-y border-slate-100 py-4 text-sm">
+            <div>
+                <p class="text-xs text-slate-500">Kuota</p>
+                <p class="mt-1 font-bold">{{ $lowongan['terisi'] }}/{{ $lowongan['kuota'] }} asisten</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500">Tenggat</p>
+                <p class="mt-1 font-bold">{{ $lowongan['tenggat'] }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-500">Jadwal</p>
+                <p class="mt-1 font-bold">{{ $lowongan['jadwal'] }}</p>
+            </div>
+        </div>
+
+        <a href="{{ route('mahasiswa.lowongan.show', $lowongan['id']) }}"
+           class="mt-4 inline-flex text-sm font-bold text-[#2058B2] hover:underline">
+            Lihat detail →
+        </a>
+
+    </article>
+    @endforeach
+</div>
+
 @endsection

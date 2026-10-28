@@ -1,15 +1,27 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboard;
+use App\Http\Controllers\Mahasiswa\LowonganController as MahasiswaLowongan;
+use App\Http\Controllers\Mahasiswa\PendaftaranController as MahasiswaPendaftaran;
+use App\Http\Controllers\Mahasiswa\StatusController as MahasiswaStatus;
+use App\Http\Controllers\Mahasiswa\TimesheetController as MahasiswaTimesheet;
+use App\Http\Controllers\Dosen\DashboardController as DosenDashboard;
+use App\Http\Controllers\Dosen\LowonganController as DosenLowongan;
+use App\Http\Controllers\Dosen\TimesheetController as DosenTimesheet;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/', fn () => view('welcome'));
+
+Route::get('/dashboard', fn () => view('dashboard'))
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -19,18 +31,57 @@ Route::middleware('auth')->group(function () {
 
 require __DIR__.'/auth.php';
 
-Route::get('/dosen/dashboard', function () {
-    return view('dosen.dashboard');
+/*
+|--------------------------------------------------------------------------
+| Route Mahasiswa
+|--------------------------------------------------------------------------
+*/
+Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
+
+    Route::get('/dashboard', [MahasiswaDashboard::class, 'index'])
+        ->name('dashboard');
+
+    Route::get('/lowongan', [MahasiswaLowongan::class, 'index'])
+        ->name('lowongan.index');
+
+    Route::get('/lowongan/{id}', [MahasiswaLowongan::class, 'show'])
+        ->name('lowongan.show');
+
+    Route::get('/pendaftaran/{id}', [MahasiswaPendaftaran::class, 'create'])
+        ->name('pendaftaran.create');
+
+    Route::post('/pendaftaran', [MahasiswaPendaftaran::class, 'store'])
+        ->name('pendaftaran.store');
+
+    Route::get('/status', [MahasiswaStatus::class, 'index'])
+        ->name('status');
+
+    Route::get('/timesheet', [MahasiswaTimesheet::class, 'index'])
+        ->name('timesheet');
+
+    Route::post('/timesheet', [MahasiswaTimesheet::class, 'store'])
+        ->name('timesheet.store');
 });
 
-Route::get('/dosen/lowongan/create', function () {
-    return view('dosen.lowongan.create'); 
-});
+/*
+|--------------------------------------------------------------------------
+| Route Dosen
+|--------------------------------------------------------------------------
+*/
+Route::prefix('dosen')->name('dosen.')->group(function () {
 
-Route::get('/dosen/timesheet', function () {
-    return view('dosen.timesheet.index');
-});
+    Route::get('/dashboard', [DosenDashboard::class, 'index'])
+        ->name('dashboard');
 
-Route::get('/dosen/timesheet/detail', function () {
-    return view('dosen.timesheet.detail');
+    Route::get('/lowongan/create', [DosenLowongan::class, 'create'])
+        ->name('lowongan.create');
+
+    Route::post('/lowongan', [DosenLowongan::class, 'store'])
+        ->name('lowongan.store');
+
+    Route::get('/timesheet', [DosenTimesheet::class, 'index'])
+        ->name('timesheet');
+
+    Route::get('/timesheet/{id}', [DosenTimesheet::class, 'show'])
+        ->name('timesheet.show');
 });
