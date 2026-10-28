@@ -100,6 +100,7 @@
                     <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div x-show="open" x-transition class="absolute left-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Status'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Status</a>
                     <a href="#" @click.prevent="selected = 'Menunggu'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Menunggu</a>
                     <a href="#" @click.prevent="selected = 'Disetujui'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Disetujui</a>
                     <a href="#" @click.prevent="selected = 'Ditolak'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ditolak</a>
@@ -113,6 +114,7 @@
                     <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div x-show="open" x-transition class="absolute left-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Semester'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Semester</a>
                     <a href="#" @click.prevent="selected = 'Ganjil'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ganjil</a>
                     <a href="#" @click.prevent="selected = 'Genap'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Genap</a>
                 </div>
@@ -125,6 +127,7 @@
                     <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
                 <div x-show="open" x-transition class="absolute left-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Matakuliah'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Matakuliah</a>
                     <a href="#" @click.prevent="selected = 'Algoritma Struktur Data'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Algoritma Struktur Data</a>
                     <a href="#" @click.prevent="selected = 'Jaringan Komputer'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Jaringan Komputer</a>
                 </div>
