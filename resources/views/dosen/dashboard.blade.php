@@ -82,45 +82,70 @@
     </div>
 
     <!-- FILTER BAR -->
-    <div class="bg-white rounded-2xl border border-gray-200/80 p-4 mb-8 shadow-sm flex flex-wrap items-center gap-3 w-full">        
-        <!-- Search Input -->
-       <div class="relative flex-1 min-w-[200px]">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+    <div class="bg-white rounded-2xl border border-gray-200/80 p-4 mb-8 shadow-sm">
+        <div class="flex items-center gap-3 w-full flex-nowrap">        
+            
+            <!-- 1. Search Input (Bisa menyusut fleksibel) -->
+            <div class="relative flex-1 min-w-[180px]">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                 </div>
-            <input type="text" class="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-white placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1E5EFF]" placeholder="Cari pendaftar, matakuliah...">
-        </div>
+                <input type="text" class="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl bg-white placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1E5EFF]" placeholder="Cari pendaftar, matakuliah...">
+            </div>
 
-        <!-- Dropdowns -->
-      <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-        <button class="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap">
-            Semua Status
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
-        
-        <button class="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap">
-            Semua Semester
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
+            <!-- 2. Dropdown Status -->
+            <div class="relative shrink-0" x-data="{ open: false, selected: 'Semua Status' }">
+                <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center justify-between px-4 py-2.5 bg-[#EBF1FF] border border-gray-200 rounded-xl text-sm font-medium text-[#1E5EFF] shadow-xs hover:bg-gray-50 focus:outline-none">
+                    <span x-text="selected" class="truncate"></span>
+                    <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div x-show="open" x-transition class="absolute left-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Status'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Status</a>
+                    <a href="#" @click.prevent="selected = 'Menunggu'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Menunggu</a>
+                    <a href="#" @click.prevent="selected = 'Disetujui'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Disetujui</a>
+                    <a href="#" @click.prevent="selected = 'Ditolak'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ditolak</a>
+                </div>
+            </div>
+            
+            <!-- 3. Dropdown Semester -->
+            <div class="relative shrink-0" x-data="{ open: false, selected: 'Semua Semester' }">
+                <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center justify-between px-4 py-2.5 bg-[#EBF1FF] border border-gray-200 rounded-xl text-sm font-medium text-[#1E5EFF] shadow-xs hover:bg-gray-50 focus:outline-none">
+                    <span x-text="selected" class="truncate"></span>
+                    <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div x-show="open" x-transition class="absolute left-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Semester'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Semester</a>
+                    <a href="#" @click.prevent="selected = 'Ganjil'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ganjil</a>
+                    <a href="#" @click.prevent="selected = 'Genap'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Genap</a>
+                </div>
+            </div>
 
-        <button class="px-3.5 py-2.5 border border-gray-200 rounded-xl bg-white text-xs sm:text-sm font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5 whitespace-nowrap">
-            Semua Matakuliah
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-        </button>
+            <!-- 4. Dropdown Mata Kuliah -->
+            <div class="relative shrink-0" x-data="{ open: false, selected: 'Semua Matakuliah' }">
+                <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center justify-between px-4 py-2.5 bg-[#EBF1FF] border border-gray-200 rounded-xl text-sm font-medium text-[#1E5EFF] shadow-xs hover:bg-gray-50 focus:outline-none">
+                    <span x-text="selected" class="truncate"></span>
+                    <svg class="w-4 h-4 text-gray-500 transition-transform duration-200 ml-2 shrink-0" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div x-show="open" x-transition class="absolute left-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
+                    <a href="#" @click.prevent="selected = 'Semua Matakuliah'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Matakuliah</a>
+                    <a href="#" @click.prevent="selected = 'Algoritma Struktur Data'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Algoritma Struktur Data</a>
+                    <a href="#" @click.prevent="selected = 'Jaringan Komputer'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Jaringan Komputer</a>
+                </div>
+            </div>
 
-        <!-- Eksport PDF -->
-        <button class="px-4 py-2.5 bg-[#EBF1FF] text-[#1E5EFF] border border-blue-100 rounded-xl text-xs sm:text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center gap-2 whitespace-nowrap">
-            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
+            <!-- 5. Tombol Eksport PDF -->
+            <button class="px-4 py-2.5 bg-[#EBF1FF] text-[#1E5EFF] border border-blue-100 rounded-xl text-sm font-semibold hover:bg-blue-100 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0">
+                <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
                 Eksport PDF
-        </button>
+            </button>
 
+            <!-- 6. Tombol Refresh -->
+            <button class="p-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-gray-600 shadow-xs shrink-0" title="Refresh Data">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
 
-        <!-- Refresh -->
-        <button class="p-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors text-gray-600">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-        </button>
         </div>
     </div>    
 
@@ -137,7 +162,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-[#F0F6FF] border-b border-gray-200 text-[#2058B2] text-xs font-bold uppercase tracking-wider">
+                    <tr class="bg-[#F0F6FF] border-b border-gray-200 text-[#2058B2] text-sm font-bold  tracking-wider">
                         <th class="py-4 px-6 md:px-8">Nama Mata Kuliah & Kode</th>
                         <th class="py-4 px-6">Kuota</th>
                         <th class="py-4 px-6">Pelamar Terdaftar</th>
