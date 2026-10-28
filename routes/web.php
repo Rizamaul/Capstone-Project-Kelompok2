@@ -100,6 +100,9 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::delete('/lowongan/{id}', [DosenLowongan::class, 'destroy'])
         ->name('lowongan.destroy');
 
+    Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
+        ->name('pendaftar.index');
+
     Route::get('/timesheet', [DosenTimesheet::class, 'index'])
         ->name('timesheet');
 

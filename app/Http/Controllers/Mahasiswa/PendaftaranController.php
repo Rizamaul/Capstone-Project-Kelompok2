@@ -26,6 +26,9 @@ class PendaftaranController extends Controller
             'cv_path' => 'pendaftaran/2026/10/aisyah-putri-cv.pdf',
             'transkrip_path' => 'pendaftaran/2026/10/aisyah-putri-transkrip.pdf',
             'status' => 'menunggu',
+            'catatan_dosen' => 'Mahasiswa memiliki performa akademik baik, namun masih perlu penguatan komunikasi saat praktikum.',
+            'status_seleksi' => 'menunggu',
+            'is_published' => false,
             'created_at' => '2026-10-28T00:00:00Z',
         ],
         [
@@ -40,6 +43,9 @@ class PendaftaranController extends Controller
             'cv_path' => 'pendaftaran/2026/10/rafi-andika-cv.pdf',
             'transkrip_path' => 'pendaftaran/2026/10/rafi-andika-transkrip.pdf',
             'status' => 'disetujui',
+            'catatan_dosen' => 'Disetujui karena rekam jejak akademik kuat dan siap mengajar.',
+            'status_seleksi' => 'disetujui',
+            'is_published' => true,
             'created_at' => '2026-10-27T00:00:00Z',
         ],
     ];
@@ -53,6 +59,10 @@ class PendaftaranController extends Controller
     {
         $record = array_merge([
             'id' => count(self::$pendaftar) + 1,
+            'status' => 'menunggu',
+            'catatan_dosen' => null,
+            'status_seleksi' => 'menunggu',
+            'is_published' => false,
             'created_at' => now()->toISOString(),
         ], $data);
 
@@ -61,12 +71,39 @@ class PendaftaranController extends Controller
         return $record;
     }
 
-    /**
-     * API list pendaftar untuk sisi dosen.
-     */
-    public function index()
+    public static function sanitizeForMahasiswa(array $record): array
     {
-        return response()->json(self::getStoredPendaftar());
+        $publicRecord = $record;
+
+        unset($publicRecord['catatan_dosen']);
+
+        if (! ($publicRecord['is_published'] ?? false)) {
+            unset($publicRecord['status_seleksi']);
+            unset($publicRecord['is_published']);
+        }
+
+        return $publicRecord;
+    }
+
+    public static function sanitizeForDosen(array $record): array
+    {
+        return $record;
+    }
+
+    /**
+     * API list pendaftar untuk sisi dosen/mahasiswa.
+     */
+    public function index(Request $request)
+    {
+        $pendaftar = array_map(function (array $record) use ($request): array {
+            if (str_contains($request->path(), 'dosen/pendaftar')) {
+                return self::sanitizeForDosen($record);
+            }
+
+            return self::sanitizeForMahasiswa($record);
+        }, self::getStoredPendaftar());
+
+        return response()->json($pendaftar);
     }
 
     /**

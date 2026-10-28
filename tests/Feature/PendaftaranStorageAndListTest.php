@@ -38,8 +38,18 @@ class PendaftaranStorageAndListTest extends TestCase
 
     public function test_dosen_can_list_pendaftar(): void
     {
+        $response = $this->getJson('/dosen/pendaftar');
+
+        $response->assertOk()
+            ->assertJsonFragment(['catatan_dosen' => 'Mahasiswa memiliki performa akademik baik, namun masih perlu penguatan komunikasi saat praktikum.']);
+    }
+
+    public function test_mahasiswa_list_hides_private_dosen_notes(): void
+    {
         $response = $this->getJson('/mahasiswa/pendaftar');
 
         $response->assertOk();
+        $response->assertJsonMissingPath('0.catatan_dosen');
+        $response->assertJsonMissingPath('1.catatan_dosen');
     }
 }
