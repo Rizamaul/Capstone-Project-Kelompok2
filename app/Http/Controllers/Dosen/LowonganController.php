@@ -8,6 +8,14 @@ use Illuminate\Http\Request;
 class LowonganController extends Controller
 {
     /**
+     * Halaman daftar draft lowongan.
+     */
+    public function draft()
+    {
+        return view('dosen.lowongan.draft');
+    }
+
+    /**
      * Form buat lowongan baru.
      */
     public function create()

@@ -73,6 +73,9 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/dashboard', [DosenDashboard::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/lowongan/draft', [DosenLowongan::class, 'draft'])
+        ->name('lowongan.draft');
+
     Route::get('/lowongan/create', [DosenLowongan::class, 'create'])
         ->name('lowongan.create');
 
