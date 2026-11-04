@@ -56,6 +56,9 @@ Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::get('/status', [MahasiswaStatus::class, 'index'])
         ->name('status');
 
+    Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
+        ->name('pendaftar.index');
+
     Route::get('/timesheet', [MahasiswaTimesheet::class, 'index'])
         ->name('timesheet');
 
@@ -73,6 +76,9 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/dashboard', [DosenDashboard::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/lowongan', [DosenLowongan::class, 'index'])
+        ->name('lowongan.index');
+
     Route::get('/lowongan/draft', [DosenLowongan::class, 'draft'])
         ->name('lowongan.draft');
 
@@ -81,6 +87,24 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
 
     Route::post('/lowongan', [DosenLowongan::class, 'store'])
         ->name('lowongan.store');
+
+    Route::get('/lowongan/{id}', [DosenLowongan::class, 'show'])
+        ->name('lowongan.show');
+
+    Route::get('/lowongan/{id}/edit', [DosenLowongan::class, 'edit'])
+        ->name('lowongan.edit');
+
+    Route::put('/lowongan/{id}', [DosenLowongan::class, 'update'])
+        ->name('lowongan.update');
+
+    Route::patch('/lowongan/{id}/status', [DosenLowongan::class, 'toggleStatus'])
+        ->name('lowongan.toggle-status');
+
+    Route::delete('/lowongan/{id}', [DosenLowongan::class, 'destroy'])
+        ->name('lowongan.destroy');
+
+    Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
+        ->name('pendaftar.index');
 
     Route::get('/timesheet', [DosenTimesheet::class, 'index'])
         ->name('timesheet');
