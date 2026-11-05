@@ -1,14 +1,14 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Dosen\DashboardController as DosenDashboard;
+use App\Http\Controllers\Dosen\LowonganController as DosenLowongan;
+use App\Http\Controllers\Dosen\TimesheetController as DosenTimesheet;
 use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboard;
 use App\Http\Controllers\Mahasiswa\LowonganController as MahasiswaLowongan;
 use App\Http\Controllers\Mahasiswa\PendaftaranController as MahasiswaPendaftaran;
 use App\Http\Controllers\Mahasiswa\StatusController as MahasiswaStatus;
 use App\Http\Controllers\Mahasiswa\TimesheetController as MahasiswaTimesheet;
-use App\Http\Controllers\Dosen\DashboardController as DosenDashboard;
-use App\Http\Controllers\Dosen\LowonganController as DosenLowongan;
-use App\Http\Controllers\Dosen\TimesheetController as DosenTimesheet;
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', fn () => view('welcome'));
+Route::get('/', fn () => view('development.role-picker'))->name('home');
 
 Route::get('/dashboard', fn () => view('dashboard'))
     ->middleware(['auth', 'verified'])
