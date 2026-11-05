@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', [MahasiswaDashboard::class, 'index']);
+Route::get('/', fn () => view('development.role-picker'))->name('home');
 
 Route::get('/dashboard', fn () => view('dashboard'))
     ->middleware(['auth', 'verified'])
