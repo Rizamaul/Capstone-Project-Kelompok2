@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Models\Timesheet;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class TimesheetController extends Controller
 {
@@ -12,25 +14,46 @@ class TimesheetController extends Controller
      */
     public function index()
     {
-        // Data dummy — nantinya diganti query ke database
-        $entries = [
-            [
-                'course'   => '2403 · Algoritma Struktur Data',
-                'week'     => 'Minggu 02 · 12–18 Okt 2026',
-                'activity' => 'Memeriksa laporan praktikum',
-                'date'     => '20 Okt 2026',
-                'hours'    => 5,
-                'status'   => 'Disetujui',
-            ],
-            [
-                'course'   => '2403 · Algoritma Struktur Data',
-                'week'     => 'Minggu 01 · 5–11 Okt 2026',
-                'activity' => 'Mendampingi praktikum',
-                'date'     => '13 Okt 2026',
-                'hours'    => 1.5,
-                'status'   => 'Disetujui',
-            ],
-        ];
+        $entries = [];
+
+        if (Schema::hasTable('timesheet')) {
+            $entries = Timesheet::query()
+                ->where('asisten_id', auth()->id() ?? 1)
+                ->orderByDesc('tanggal')
+                ->get()
+                ->map(function (Timesheet $entry): array {
+                    return [
+                        'course' => 'Asistensi Praktikum',
+                        'week' => 'Minggu '. $entry->tanggal->weekOfYear,
+                        'activity' => $entry->uraian_pekerjaan,
+                        'date' => $entry->tanggal->translatedFormat('d M Y'),
+                        'hours' => (float) $entry->jumlah_jam,
+                        'status' => $entry->status_approval === 'approved' ? 'Disetujui' : 'Menunggu',
+                    ];
+                })
+                ->all();
+        }
+
+        if (empty($entries)) {
+            $entries = [
+                [
+                    'course'   => '2403 · Algoritma Struktur Data',
+                    'week'     => 'Minggu 02 · 12–18 Okt 2026',
+                    'activity' => 'Memeriksa laporan praktikum',
+                    'date'     => '20 Okt 2026',
+                    'hours'    => 5,
+                    'status'   => 'Disetujui',
+                ],
+                [
+                    'course'   => '2403 · Algoritma Struktur Data',
+                    'week'     => 'Minggu 01 · 5–11 Okt 2026',
+                    'activity' => 'Mendampingi praktikum',
+                    'date'     => '13 Okt 2026',
+                    'hours'    => 1.5,
+                    'status'   => 'Disetujui',
+                ],
+            ];
+        }
 
         $totalJamDisetujui = collect($entries)
             ->where('status', 'Disetujui')
@@ -57,8 +80,16 @@ class TimesheetController extends Controller
             'deskripsi'  => ['required', 'string', 'max:1000'],
         ]);
 
-        // TODO: simpan ke database
-        // Timesheet::create([...$validated, 'mahasiswa_id' => auth()->id(), 'status' => 'Menunggu']);
+        if (Schema::hasTable('timesheet')) {
+            Timesheet::create([
+                'asisten_id' => auth()->id() ?? 1,
+                'tanggal' => $validated['tanggal'],
+                'jumlah_jam' => (float) $validated['jam'],
+                'uraian_pekerjaan' => trim($validated['aktivitas'].' - '.$validated['deskripsi']),
+                'status_approval' => 'pending',
+                'catatan_revisi' => null,
+            ]);
+        }
 
         return redirect()->route('mahasiswa.timesheet')
                          ->with('success', 'Timesheet berhasil diajukan dan sedang menunggu review dosen.');

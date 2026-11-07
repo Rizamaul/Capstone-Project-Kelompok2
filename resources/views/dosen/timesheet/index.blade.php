@@ -152,7 +152,7 @@
                         </td>
                         <td class="py-4 px-6 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="/dosen/timesheet/detail" class="p-2 bg-blue-50 text-[#1E5EFF] rounded-xl hover:bg-blue-100 transition-colors" title="Lihat Detail">
+                                <a href="{{ route('dosen.timesheet.show', 1) }}" class="p-2 bg-blue-50 text-[#1E5EFF] rounded-xl hover:bg-blue-100 transition-colors" title="Lihat Detail">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </a>
                                 <button class="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors" title="Setujui">
@@ -198,7 +198,7 @@
                         </td>
                         <td class="py-4 px-6 text-center">
                             <div class="flex items-center justify-center gap-2">
-                                <a href="/dosen/timesheet/detail" class="p-2 bg-blue-50 text-[#1E5EFF] rounded-xl hover:bg-blue-100 transition-colors" title="Lihat Detail">
+                                <a href="{{ route('dosen.timesheet.show', 2) }}" class="p-2 bg-blue-50 text-[#1E5EFF] rounded-xl hover:bg-blue-100 transition-colors" title="Lihat Detail">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </a>
                                 <button class="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors" title="Setujui">

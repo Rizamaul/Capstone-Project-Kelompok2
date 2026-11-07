@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pengumuman;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class LowonganController extends Controller
 {
@@ -40,12 +42,38 @@ class LowonganController extends Controller
 
     private function getLowongans(): array
     {
+        if (Schema::hasTable('pengumuman')) {
+            $lowongans = Pengumuman::query()
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(function (Pengumuman $lowongan): array {
+                    return [
+                        'id'         => $lowongan->id,
+                        'nama'       => $lowongan->mata_kuliah,
+                        'kode'       => strtoupper(substr(str_replace([' ', '-'], '', $lowongan->mata_kuliah), 0, 6)) ?: 'MK',
+                        'sks'        => 3,
+                        'kuota'      => (int) $lowongan->kuota,
+                        'tenggat'    => $lowongan->tenggat?->format('Y-m-d'),
+                        'jadwal'     => 'Jadwal belum diatur',
+                        'status'     => $lowongan->status_aktif ? 'aktif' : 'tutup',
+                        'deskripsi'  => $lowongan->syarat,
+                        'syarat_ipk' => $lowongan->kuota > 0 ? 3.0 : null,
+                    ];
+                })
+                ->all();
+
+            if (! empty($lowongans)) {
+                return $lowongans;
+            }
+        }
+
         return self::$lowongans;
     }
 
     private function findLowongan(int $id): ?array
     {
-        return collect(self::$lowongans)->firstWhere('id', $id);
+        return collect(self::$lowongans)->firstWhere('id', $id)
+            ?? collect($this->getLowongans())->firstWhere('id', $id);
     }
 
     /**
@@ -59,7 +87,7 @@ class LowonganController extends Controller
             return response()->json($lowongans);
         }
 
-        return response()->json($lowongans);
+        return view('dosen.lowongan.index', compact('lowongans'));
     }
 
     /**
@@ -83,7 +111,7 @@ class LowonganController extends Controller
             return response()->json($lowongan);
         }
 
-        return response()->json($lowongan);
+        return view('dosen.lowongan.show', compact('lowongan'));
     }
 
     /**
@@ -99,7 +127,7 @@ class LowonganController extends Controller
             return response()->json($lowongan);
         }
 
-        return response()->json($lowongan);
+        return view('dosen.lowongan.edit', compact('lowongan'));
     }
 
     /**
