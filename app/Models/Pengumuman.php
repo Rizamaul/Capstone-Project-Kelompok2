@@ -23,4 +23,21 @@ class Pengumuman extends Model
         'tenggat' => 'datetime',
         'status_aktif' => 'boolean',
     ];
+
+    /**
+     * Relasi ke tabel Pendaftaran
+     * 1 Pengumuman/Lowongan memiliki BANYAK Pendaftaran (HasMany)
+     */
+    public function pendaftarans()
+    {
+        return $this->hasMany(Pendaftaran::class, 'lowongan_id', 'id');
+    }
+
+    /**
+     * Opsional: Relasi ke tabel Users (Dosen pembuat pengumuman)
+     */
+    public function dosen()
+    {
+        return $this->belongsTo(User::class, 'dosen_id', 'id');
+    }
 }
