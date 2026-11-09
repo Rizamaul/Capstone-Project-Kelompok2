@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Timesheet;
+use Carbon\Carbon;
 
 class TimesheetController extends Controller
 {
@@ -41,11 +43,16 @@ class TimesheetController extends Controller
             '2404 · Jaringan Komputer',
         ];
 
+        /* TODO Real Database Query:
+        $entries = Timesheet::where('user_id', auth()->id())->orderBy('tanggal', 'desc')->get();
+        $totalJamDisetujui = $entries->where('status', 'Disetujui')->sum('jam');
+        */
+
         return view('mahasiswa.timesheet', compact('entries', 'totalJamDisetujui', 'matakuliahAktif'));
     }
 
     /**
-     * Simpan entri timesheet baru.
+     * Simpan entri timesheet baru dengan validasi Max 40 Jam/Minggu.
      */
     public function store(Request $request)
     {
@@ -57,8 +64,36 @@ class TimesheetController extends Controller
             'deskripsi'  => ['required', 'string', 'max:1000'],
         ]);
 
-        // TODO: simpan ke database
-        // Timesheet::create([...$validated, 'mahasiswa_id' => auth()->id(), 'status' => 'Menunggu']);
+        $userId = auth()->id();
+        $tanggalInput = Carbon::parse($validated['tanggal']);
+        
+        // Menentukan rentang awal (Senin) dan akhir (Minggu) dari tanggal input
+        $startOfWeek = $tanggalInput->copy()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        $endOfWeek   = $tanggalInput->copy()->endOfWeek(Carbon::SUNDAY)->format('Y-m-d');
+
+        // Menghitung akumulasi jam pada minggu yang sama di database
+        $jamSudahAda = Timesheet::where('user_id', $userId) // atau 'mahasiswa_id', sesuaikan dengan database Anda
+            ->whereBetween('tanggal', [$startOfWeek, $endOfWeek])
+            ->where('status', '!=', 'Ditolak') // Abaikan jam yang ditolak dosen
+            ->sum('jam');
+
+        // Validasi: Tolak jika total jam minggu ini melebihi 40 jam
+        if (($jamSudahAda + $validated['jam']) > 40) {
+            return back()->withInput()->withErrors([
+                'jam' => "Total jam kerja minggu ini melebihi batas maksimal 40 jam. (Sudah terisi: {$jamSudahAda} jam. Input baru: {$validated['jam']} jam)."
+            ]);
+        }
+
+        // Menyimpan data ke database
+        Timesheet::create([
+            'user_id'    => $userId, // atau 'mahasiswa_id', sesuaikan dengan migrasi
+            'matakuliah' => $validated['matakuliah'],
+            'tanggal'    => $validated['tanggal'],
+            'jam'        => $validated['jam'],
+            'aktivitas'  => $validated['aktivitas'],
+            'deskripsi'  => $validated['deskripsi'],
+            'status'     => 'Menunggu',
+        ]);
 
         return redirect()->route('mahasiswa.timesheet')
                          ->with('success', 'Timesheet berhasil diajukan dan sedang menunggu review dosen.');
