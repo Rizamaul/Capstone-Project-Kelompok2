@@ -6,33 +6,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('pendaftaran', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('lowongan_id')->nullable();
-            $table->string('nama');
-            $table->string('nim');
+            // Foreign keys
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            // Asumsi lowongan mengambil dari tabel pengumuman
+            $table->foreignId('lowongan_id')->constrained('pengumuman')->cascadeOnDelete(); 
+            
+            // Data pendaftaran
             $table->string('nilai_matkul')->nullable();
-            $table->decimal('ipk', 3, 2)->nullable();
             $table->text('motivasi')->nullable();
-            $table->string('portfolio')->nullable();
-            $table->string('cv_path')->nullable();
-            $table->string('transkrip_path')->nullable();
-            $table->string('status')->default('menunggu');
+            $table->string('file_ksm_path')->nullable();
+            
+            // Status seleksi
+            $table->string('status')->default('menunggu'); // Publik (mahasiswa)
+            $table->string('status_seleksi')->default('menunggu'); // Internal (dosen)
             $table->text('catatan_dosen')->nullable();
-            $table->string('status_seleksi')->nullable()->comment('menunggu, disetujui, ditolak');
             $table->boolean('is_published')->default(false);
+            
             $table->timestamps();
+
+            // Constraint unik: 1 Mahasiswa (user_id) hanya bisa mendaftar 1x di lowongan yang sama
+            $table->unique(['user_id', 'lowongan_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pendaftaran');

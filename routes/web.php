@@ -111,4 +111,8 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
 
     Route::get('/timesheet/{id}', [DosenTimesheet::class, 'show'])
         ->name('timesheet.show');
+
+    Route::patch('/pendaftaran/{pendaftaran}/evaluasi', [UmumkanHasilController::class, 'simpanEvaluasi']);
+
+    Route::post('/lowongan/{lowongan_id}/umumkan-hasil', [UmumkanHasilController::class, 'umumkanHasil']);
 });

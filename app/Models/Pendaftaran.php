@@ -6,21 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Pendaftaran extends Model
 {
-    // Mengarahkan model ke tabel pendaftaran yang sudah Anda buat
     protected $table = 'pendaftaran';
 
-    // Mengizinkan insert/update untuk semua kolom kecuali 'id'
     protected $guarded = ['id'];
 
-    // Cast tipe data agar sesuai dengan migration
-    protected $casts = [
-        'ipk' => 'float',
-        'is_published' => 'boolean',
-    ];
+    // Relasi ke User (Mahasiswa)
+    public function mahasiswa()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
-    // Relasi balik ke tabel pengumuman (lowongan)
+    // Relasi ke Pengumuman (Lowongan)
     public function pengumuman()
     {
-        return $this->belongsTo(Pengumuman::class, 'lowongan_id', 'id');
+        return $this->belongsTo(Pengumuman::class, 'lowongan_id');
     }
 }
