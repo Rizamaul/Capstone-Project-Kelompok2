@@ -3,49 +3,78 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pendaftaran;
+use Illuminate\View\View;
 
 class StatusController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        // Data dummy — nantinya diganti query ke database berdasarkan user yang login
+        $query = Pendaftaran::query()->with('lowongan');
+
+        if (auth()->check()) {
+            $query->where('user_id', auth()->id());
+        } else {
+            $query->whereKey(session('mahasiswa.pendaftaran_id', 0));
+        }
+
+        $record = $query->latest()->first();
+
+        if (! $record) {
+            return view('mahasiswa.status', [
+                'pendaftaran' => null,
+                'langkah' => [],
+            ]);
+        }
+
+        $status = $record->status;
+        $statusText = match ($status) {
+            'disetujui' => 'Pendaftaran disetujui',
+            'ditolak' => 'Pendaftaran ditolak',
+            default => 'Menunggu keputusan dosen',
+        };
+        $isReviewed = $record->is_published;
+
         $pendaftaran = [
-            'matkul'          => 'Algoritma Struktur Data',
-            'kode'            => '2403',
-            'sks'             => 3,
-            'didaftarkan_pada'=> '22 Okt 2026, 08:18',
-            'status_terkini'  => 'Menunggu keputusan',
-            'nim'             => '105222056',
-            'nama'            => 'Nama Mahasiswa Aktif',
-            'nilai_matkul'    => 'A-',
-            'cv'              => 'CV.pdf',
-            'transkrip'       => 'Transkrip.pdf',
+            'matkul' => $record->lowongan?->mata_kuliah ?? 'Lowongan tidak tersedia',
+            'kode' => $record->lowongan?->kode ?? 'MK',
+            'sks' => $record->lowongan?->sks ?? 0,
+            'didaftarkan_pada' => $record->created_at?->translatedFormat('d M Y, H:i') ?? '-',
+            'status_terkini' => $statusText,
+            'nim' => $record->nim,
+            'nama' => $record->nama,
+            'nilai_matkul' => $record->nilai_matkul,
+            'cv' => $record->cv_path ? basename($record->cv_path) : 'Tidak diminta',
+            'transkrip' => $record->transkrip_path ? basename($record->transkrip_path) : 'Tidak diminta',
+            'catatan_dosen' => $isReviewed ? $record->catatan_dosen : null,
         ];
 
         $langkah = [
             [
-                'judul'    => 'Terdaftar',
-                'deskripsi'=> 'Formulir dan dokumen berhasil dikirim.',
-                'waktu'    => '22 Okt 2026 · 08:18',
-                'selesai'  => true,
+                'judul' => 'Terdaftar',
+                'deskripsi' => 'Formulir dan dokumen berhasil dikirim.',
+                'waktu' => $pendaftaran['didaftarkan_pada'],
+                'selesai' => true,
             ],
             [
-                'judul'    => 'Verifikasi berkas',
-                'deskripsi'=> 'Dosen memeriksa kelengkapan dokumen.',
-                'waktu'    => 'Menunggu proses',
-                'selesai'  => false,
+                'judul' => 'Verifikasi berkas',
+                'deskripsi' => $isReviewed ? 'Dosen telah meninjau berkas pendaftaran.' : 'Dosen memeriksa kelengkapan dokumen.',
+                'waktu' => $isReviewed ? 'Selesai' : 'Menunggu proses',
+                'selesai' => $isReviewed,
             ],
             [
-                'judul'    => 'Seleksi / Interview',
-                'deskripsi'=> 'Jadwal akan ditampilkan jika kamu lolos tahap berkas.',
-                'waktu'    => 'Belum dimulai',
-                'selesai'  => false,
+                'judul' => 'Seleksi / Interview',
+                'deskripsi' => $status === 'disetujui'
+                    ? 'Pendaftaran disetujui.'
+                    : ($status === 'ditolak' ? 'Pendaftaran tidak dilanjutkan.' : 'Jadwal akan ditampilkan jika kamu lolos tahap berkas.'),
+                'waktu' => $isReviewed ? 'Selesai' : 'Belum dimulai',
+                'selesai' => $isReviewed,
             ],
             [
-                'judul'    => 'Hasil akhir',
-                'deskripsi'=> 'Hasil diumumkan oleh dosen pengampu.',
-                'waktu'    => 'Belum diumumkan',
-                'selesai'  => false,
+                'judul' => 'Hasil akhir',
+                'deskripsi' => $isReviewed ? $statusText : 'Hasil diumumkan oleh dosen pengampu.',
+                'waktu' => $isReviewed ? $record->updated_at?->translatedFormat('d M Y, H:i') : 'Belum diumumkan',
+                'selesai' => $isReviewed,
             ],
         ];
 

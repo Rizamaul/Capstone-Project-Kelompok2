@@ -3,47 +3,51 @@
 namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pendaftaran;
+use App\Models\Pengumuman;
+use App\Models\Timesheet;
+use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): View
     {
-        // Data dummy — nantinya diganti query ke database
+        $lowongans = Pengumuman::query()
+            ->withCount([
+                'pendaftarans',
+                'pendaftarans as terisi' => fn ($query) => $query
+                    ->where('status_seleksi', 'disetujui')
+                    ->where('is_published', true),
+                'pendaftarans as review_count' => fn ($query) => $query
+                    ->where('status_seleksi', 'menunggu')
+                    ->where('is_published', false),
+            ])
+            ->latest()
+            ->take(5)
+            ->get();
+
         $statistik = [
-            'pengumuman_aktif' => 2,
-            'total_pendaftar'  => 76,
-            'kuota_terisi'     => 4,
-            'kuota_total'      => 8,
-            'review_berkas'    => 26,
+            'pengumuman_aktif' => Pengumuman::query()
+                ->where('status_aktif', true)
+                ->where('tenggat', '>', now())
+                ->count(),
+            'total_pendaftar' => Pendaftaran::query()->count(),
+            'kuota_terisi' => Pendaftaran::query()
+                ->where('status_seleksi', 'disetujui')
+                ->where('is_published', true)
+                ->count(),
+            'kuota_total' => (int) Pengumuman::query()
+                ->where('status_aktif', true)
+                ->sum('kuota'),
+            'review_berkas' => Pendaftaran::query()
+                ->where('status_seleksi', 'menunggu')
+                ->where('is_published', false)
+                ->count(),
+            'timesheet_menunggu' => Timesheet::query()
+                ->where('status_approval', 'pending')
+                ->count(),
         ];
 
-        $lowongans = [
-            [
-                'nama'            => 'Algoritma Struktur Data',
-                'kode'            => '2402',
-                'sks'             => 3,
-                'kuota'           => 4,
-                'terisi'          => 3,
-                'total_pelamar'   => 38,
-                'belum_verifikasi'=> 19,
-                'tenggat'         => '22 Okt, 2026',
-                'sisa'            => 'Sisa Beberapa Jam Lagi',
-                'status'          => 'Dibuka',
-            ],
-            [
-                'nama'            => 'Jaringan Komputer',
-                'kode'            => '2402',
-                'sks'             => 3,
-                'kuota'           => 4,
-                'terisi'          => 1,
-                'total_pelamar'   => 38,
-                'belum_verifikasi'=> 19,
-                'tenggat'         => '22 Okt, 2026',
-                'sisa'            => 'Sisa Beberapa Jam Lagi',
-                'status'          => 'Dibuka',
-            ],
-        ];
-
-        return view('dosen.dashboard', compact('statistik', 'lowongans'));
+        return view('dosen.dashboard', compact('lowongans', 'statistik'));
     }
 }

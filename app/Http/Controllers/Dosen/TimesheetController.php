@@ -4,85 +4,83 @@ namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
 use App\Models\Timesheet;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class TimesheetController extends Controller
 {
-    /**
-     * Daftar timesheet mahasiswa yang perlu di-review.
-     */
-    public function index()
+    public function index(Request $request): View
     {
-        $entries = [];
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'status' => ['nullable', Rule::in(['pending', 'approved', 'rejected'])],
+        ]);
 
-        if (Schema::hasTable('timesheet')) {
-            $entries = Timesheet::query()
-                ->orderByDesc('tanggal')
-                ->get()
-                ->map(function (Timesheet $entry): array {
-                    return [
-                        'id' => $entry->id,
-                        'nama' => 'Mahasiswa '. $entry->id,
-                        'matakuliah' => 'Asistensi Praktikum',
-                        'tanggal' => $entry->tanggal->format('d M Y'),
-                        'jam' => (float) $entry->jumlah_jam,
-                        'status' => $entry->status_approval === 'approved' ? 'Disetujui' : 'Menunggu',
-                        'aktivitas' => $entry->uraian_pekerjaan,
-                    ];
-                })
-                ->all();
+        $query = Timesheet::query()->with('asisten')->latest('tanggal');
+
+        if (! empty($filters['q'])) {
+            $search = $filters['q'];
+            $query->where(function ($query) use ($search): void {
+                $query->where('mata_kuliah', 'like', "%{$search}%")
+                    ->orWhere('aktivitas', 'like', "%{$search}%")
+                    ->orWhere('uraian_pekerjaan', 'like', "%{$search}%")
+                    ->orWhereHas('asisten', fn ($asistenQuery) => $asistenQuery->where('name', 'like', "%{$search}%"));
+            });
         }
 
-        if (empty($entries)) {
-            $entries = [
-                [
-                    'id' => 1,
-                    'nama' => 'Khairul Hilmi',
-                    'matakuliah' => 'Algoritma Struktur Data',
-                    'tanggal' => '26 Okt 2026',
-                    'jam' => 3.5,
-                    'status' => 'Menunggu',
-                    'aktivitas' => 'Mendampingi praktikum dan membantu mahasiswa memperbaiki error pada tugas.',
-                ],
-                [
-                    'id' => 2,
-                    'nama' => 'Aisyah Putri',
-                    'matakuliah' => 'Jaringan Komputer',
-                    'tanggal' => '28 Okt 2026',
-                    'jam' => 2,
-                    'status' => 'Disetujui',
-                    'aktivitas' => 'Menyiapkan modul praktikum dan mengawasi sesi lab.',
-                ],
-            ];
+        if (! empty($filters['status'])) {
+            $query->where('status_approval', $filters['status']);
         }
 
-        return view('dosen.timesheet.index', compact('entries'));
+        $entries = $query->paginate(15)->withQueryString();
+        $statistik = [
+            'disetujui' => Timesheet::query()->where('status_approval', 'approved')->count(),
+            'menunggu' => Timesheet::query()->where('status_approval', 'pending')->count(),
+            'total_jam' => (float) Timesheet::query()->where('status_approval', 'approved')->sum('jumlah_jam'),
+            'total' => Timesheet::query()->count(),
+        ];
+
+        return view('dosen.timesheet.index', compact('entries', 'statistik', 'filters'));
     }
 
-    /**
-     * Detail satu entri timesheet.
-     */
-    public function show(int $id)
+    public function show(int $id): View
     {
-        $entry = Schema::hasTable('timesheet') ? Timesheet::find($id) : null;
-
-        if (! $entry) {
-            $entry = (object) [
-                'id' => $id,
-                'nama' => 'Khairul Hilmi',
-                'nim' => '128973407',
-                'mata_kuliah' => 'Algoritma Struktur Data',
-                'kode_mata_kuliah' => 'KODE MK',
-                'kelas' => '2402',
-                'sks' => 3,
-                'tanggal' => now()->subDays(1),
-                'jumlah_jam' => 3.5,
-                'uraian_pekerjaan' => 'Mendampingi praktikum dan membantu mahasiswa memperbaiki error pada tugas.',
-                'judul_aktivitas' => 'Mendampingi Praktikum',
-                'status_approval' => 'pending',
-            ];
-        }
+        $entry = Timesheet::query()->with('asisten')->findOrFail($id);
 
         return view('dosen.timesheet.detail', ['entry' => $entry, 'id' => $id]);
+    }
+
+    public function updateStatus(Request $request, int $id): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['approved', 'rejected'])],
+            'catatan_revisi' => ['nullable', 'required_if:status,rejected', 'string', 'max:2000'],
+        ]);
+
+        $entry = Timesheet::findOrFail($id);
+        abort_if($entry->status_approval !== 'pending', 409, 'Timesheet ini sudah ditinjau.');
+
+        $entry->update([
+            'status_approval' => $validated['status'],
+            'catatan_revisi' => $validated['catatan_revisi'] ?? null,
+        ]);
+
+        return redirect()->route('dosen.timesheet.show', $entry)
+            ->with('success', 'Keputusan timesheet berhasil disimpan.');
+    }
+
+    public function approvePending(): RedirectResponse
+    {
+        $updated = Timesheet::query()
+            ->where('status_approval', 'pending')
+            ->update([
+                'status_approval' => 'approved',
+                'catatan_revisi' => null,
+                'updated_at' => now(),
+            ]);
+
+        return back()->with('success', "{$updated} timesheet menunggu berhasil disetujui.");
     }
 }

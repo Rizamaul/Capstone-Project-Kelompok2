@@ -1,42 +1,32 @@
 @extends('layouts.dosen')
 
 @section('content')
-<div class="max-w-3xl mx-auto py-8">
-    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <h1 class="text-2xl font-bold text-[#2058B2] mb-6">Edit Lowongan</h1>
-
-        <form action="{{ route('dosen.lowongan.update', $lowongan['id']) }}" method="POST" class="space-y-4">
-            @csrf
-            @method('PUT')
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Judul lowongan</label>
-                <input type="text" name="nama" value="{{ $lowongan['nama'] ?? '' }}" class="w-full border border-gray-200 rounded-xl p-3">
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Kode</label>
-                <input type="text" name="kode" value="{{ $lowongan['kode'] ?? '' }}" class="w-full border border-gray-200 rounded-xl p-3">
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                <select name="status" class="w-full border border-gray-200 rounded-xl p-3">
-                    <option value="aktif" {{ ($lowongan['status'] ?? 'aktif') === 'aktif' ? 'selected' : '' }}>Aktif</option>
-                    <option value="tutup" {{ ($lowongan['status'] ?? 'aktif') === 'tutup' ? 'selected' : '' }}>Tutup</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Deskripsi</label>
-                <textarea name="deskripsi" rows="5" class="w-full border border-gray-200 rounded-xl p-3">{{ $lowongan['deskripsi'] ?? '' }}</textarea>
-            </div>
-
-            <div class="flex gap-3">
-                <button type="submit" class="bg-[#2058B2] text-white px-4 py-2 rounded-lg font-semibold">Simpan</button>
-                <a href="{{ route('dosen.lowongan.index') }}" class="px-4 py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-700">Batal</a>
-            </div>
-        </form>
+<div class="mx-auto max-w-4xl pb-16">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-[#2058B2]">Edit Lowongan Asisten</h1>
+        <p class="mt-1 text-sm text-gray-500">Perbarui informasi dan persyaratan lowongan.</p>
     </div>
+
+    @if($errors->any())
+        <div class="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
+            <p class="font-bold">Periksa kembali formulir:</p>
+            <ul class="mt-2 list-inside list-disc">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form action="{{ route('dosen.lowongan.update', $lowongan['id']) }}" method="POST" class="space-y-6">
+        @csrf
+        @method('PUT')
+        @include('dosen.lowongan._form')
+
+        <div class="flex justify-end gap-3">
+            <a href="{{ route('dosen.lowongan.index') }}" class="rounded-lg border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-700">Batal</a>
+            <button type="submit" class="rounded-lg bg-[#2058B2] px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Simpan Perubahan</button>
+        </div>
+    </form>
 </div>
 @endsection
