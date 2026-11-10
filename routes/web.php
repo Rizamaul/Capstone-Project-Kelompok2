@@ -80,6 +80,9 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/lowongan', [DosenLowongan::class, 'index'])
         ->name('lowongan.index');
 
+    Route::get('/lowongan/draft', [DosenLowongan::class, 'draft'])
+        ->name('lowongan.draft');
+
     Route::get('/lowongan/create', [DosenLowongan::class, 'create'])
         ->name('lowongan.create');
 
