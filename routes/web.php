@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Dosen\DashboardController as DosenDashboard;
 use App\Http\Controllers\Dosen\LowonganController as DosenLowongan;
+use App\Http\Controllers\Dosen\PendaftaranController as DosenPendaftaran;
 use App\Http\Controllers\Dosen\TimesheetController as DosenTimesheet;
 use App\Http\Controllers\Mahasiswa\DashboardController as MahasiswaDashboard;
 use App\Http\Controllers\Mahasiswa\LowonganController as MahasiswaLowongan;
@@ -103,12 +104,21 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::delete('/lowongan/{id}', [DosenLowongan::class, 'destroy'])
         ->name('lowongan.destroy');
 
-    Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
+    Route::get('/pendaftar', [DosenPendaftaran::class, 'index'])
         ->name('pendaftar.index');
+
+    Route::patch('/pendaftar/{pendaftaran}/status', [DosenPendaftaran::class, 'updateStatus'])
+        ->name('pendaftar.status');
 
     Route::get('/timesheet', [DosenTimesheet::class, 'index'])
         ->name('timesheet');
 
     Route::get('/timesheet/{id}', [DosenTimesheet::class, 'show'])
         ->name('timesheet.show');
+
+    Route::patch('/timesheet/{id}/status', [DosenTimesheet::class, 'updateStatus'])
+        ->name('timesheet.status');
+
+    Route::patch('/timesheet/approve-pending', [DosenTimesheet::class, 'approvePending'])
+        ->name('timesheet.approve-pending');
 });

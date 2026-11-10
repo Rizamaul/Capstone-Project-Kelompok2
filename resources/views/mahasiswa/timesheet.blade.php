@@ -24,6 +24,23 @@
      }"
      class="space-y-7">
 
+    @if(session('success'))
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+            <p class="font-semibold">Periksa kembali data timesheet:</p>
+            <ul class="mt-2 list-inside list-disc">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- ===== Kartu Statistik ===== --}}
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
@@ -38,8 +55,8 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5">
             <p class="text-sm font-semibold text-slate-500">Menunggu review</p>
             <p class="mt-3 text-3xl font-extrabold"
-               x-text="entries.filter(e => e.status !== 'Disetujui').length">
-                {{ collect($entries)->where('status', '!=', 'Disetujui')->count() }}
+               x-text="entries.filter(e => e.status === 'Menunggu').length">
+                {{ collect($entries)->where('status', 'Menunggu')->count() }}
             </p>
             <p class="mt-1 text-xs text-slate-400">Entri diajukan</p>
         </div>
@@ -109,12 +126,21 @@
                                 <span class="rounded-full px-3 py-1 text-xs font-bold"
                                       :class="entry.status === 'Disetujui'
                                               ? 'bg-emerald-50 text-emerald-700'
-                                              : 'bg-amber-50 text-amber-700'"
+                                              : (entry.status === 'Ditolak'
+                                                  ? 'bg-red-50 text-red-700'
+                                                  : 'bg-amber-50 text-amber-700')"
                                       x-text="entry.status">
                                 </span>
                             </td>
                         </tr>
                     </template>
+                    @if($entries === [])
+                        <tr>
+                            <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500">
+                                Belum ada timesheet. Ajukan aktivitas yang sudah dilakukan melalui formulir di bawah.
+                            </td>
+                        </tr>
+                    @endif
                 </tbody>
             </table>
         </div>
@@ -139,12 +165,16 @@
                 <span class="mb-2 block text-sm font-semibold">Mata kuliah *</span>
                 <select name="matakuliah"
                         required
+                        @disabled(empty($matakuliahAktif))
                         class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Pilih mata kuliah</option>
                     @foreach($matakuliahAktif as $mk)
-                        <option>{{ $mk }}</option>
+                        <option value="{{ $mk }}" @selected(old('matakuliah') === $mk)>{{ $mk }}</option>
                     @endforeach
                 </select>
+                @if(empty($matakuliahAktif))
+                    <span class="mt-1 block text-xs text-amber-700">Belum ada lowongan aktif untuk dipilih.</span>
+                @endif
             </label>
 
             {{-- Tanggal --}}
@@ -153,6 +183,7 @@
                 <input type="date"
                        name="tanggal"
                        required
+                       value="{{ old('tanggal') }}"
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
             </label>
 
@@ -163,6 +194,7 @@
                        name="jam"
                        required
                        min="0.5" max="40" step="0.5"
+                       value="{{ old('jam') }}"
                        placeholder="Contoh: 2.5"
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                 <span class="mt-1 block text-xs text-slate-400">Gunakan kelipatan 0,5 jam.</span>
@@ -174,6 +206,7 @@
                 <input name="aktivitas"
                        required
                        maxlength="120"
+                       value="{{ old('aktivitas') }}"
                        placeholder="Contoh: Mendampingi praktikum"
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
             </label>
@@ -187,13 +220,15 @@
                           maxlength="1000"
                           placeholder="Jelaskan kegiatan dan hasil yang dikerjakan..."
                           class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                    {{ old('deskripsi') }}
                 </textarea>
             </label>
 
             {{-- Tombol submit --}}
             <div class="flex justify-end md:col-span-2">
                 <button type="submit"
-                        class="rounded-xl bg-[#2058B2] px-6 py-3 text-sm font-bold text-white hover:bg-blue-800">
+                        @disabled(empty($matakuliahAktif))
+                        class="rounded-xl bg-[#2058B2] px-6 py-3 text-sm font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50">
                     Ajukan untuk Review →
                 </button>
             </div>

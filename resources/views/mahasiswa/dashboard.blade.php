@@ -25,10 +25,10 @@
 {{-- ===== Kartu Statistik ===== --}}
 <div class="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
     @foreach([
-        ['Pengumuman Aktif', '2',      'Bisa dilihat mahasiswa', '▤'],
-        ['Pendaftaran Saya', '1',      'Dalam seluruh periode',  '♙'],
-        ['Jam Disetujui',   '6,5 jam', 'Dalam seluruh periode',  '◷'],
-        ['Menunggu Review',  '1',      'Timesheet diajukan',     '◴'],
+        ['Pengumuman Aktif', $statistik['pengumuman_aktif'], 'Bisa dilihat mahasiswa', '▤'],
+        ['Pendaftaran Saya', $statistik['pendaftaran_saya'], 'Dalam seluruh periode', '♙'],
+        ['Jam Disetujui', number_format($statistik['jam_disetujui'], 1, ',', '.').' jam', 'Dalam seluruh periode', '◷'],
+        ['Menunggu Review', $statistik['menunggu_review'], 'Timesheet diajukan', '◴'],
     ] as $stat)
     <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex items-center justify-between">
@@ -56,7 +56,7 @@
 </div>
 
 <div class="grid gap-4 xl:grid-cols-2">
-    @foreach($lowongans as $lowongan)
+    @forelse($lowongans as $lowongan)
     <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
 
         {{-- Header kartu --}}
@@ -95,7 +95,12 @@
         </a>
 
     </article>
-    @endforeach
+    @empty
+        <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center xl:col-span-2">
+            <h3 class="font-bold text-slate-900">Belum ada lowongan yang dibuka</h3>
+            <p class="mt-2 text-sm text-slate-500">Lowongan aktif akan muncul di sini saat tersedia.</p>
+        </div>
+    @endforelse
 </div>
 
 @endsection

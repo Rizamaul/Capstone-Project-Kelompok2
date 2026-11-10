@@ -3,210 +3,231 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pendaftaran;
+use App\Models\Pengumuman;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use RuntimeException;
+use Throwable;
 
 class PendaftaranController extends Controller
 {
-    /**
-     * Dummy in-memory data untuk list pendaftar di sisi dosen.
-     * Nantinya diganti dengan query ke database/model.
-     */
-    private static array $pendaftar = [
-        [
-            'id' => 1,
-            'lowongan_id' => 1,
-            'nama' => 'Aisyah Putri',
-            'nim' => '202310101',
-            'nilai_matkul' => 'A',
-            'ipk' => 3.8,
-            'motivasi' => 'Saya siap membantu praktikum dan memahami materi dengan baik.',
-            'portfolio' => 'https://example.com/portfolio/aisyah',
-            'cv_path' => 'pendaftaran/2026/10/aisyah-putri-cv.pdf',
-            'transkrip_path' => 'pendaftaran/2026/10/aisyah-putri-transkrip.pdf',
-            'status' => 'menunggu',
-            'catatan_dosen' => 'Mahasiswa memiliki performa akademik baik, namun masih perlu penguatan komunikasi saat praktikum.',
-            'status_seleksi' => 'menunggu',
-            'is_published' => false,
-            'created_at' => '2026-10-28T00:00:00Z',
-        ],
-        [
-            'id' => 2,
-            'lowongan_id' => 2,
-            'nama' => 'Rafi Andika',
-            'nim' => '202310102',
-            'nilai_matkul' => 'AB',
-            'ipk' => 3.7,
-            'motivasi' => 'Saya memiliki pengalaman belajar struktur data dan siap mendampingi mahasiswa.',
-            'portfolio' => null,
-            'cv_path' => 'pendaftaran/2026/10/rafi-andika-cv.pdf',
-            'transkrip_path' => 'pendaftaran/2026/10/rafi-andika-transkrip.pdf',
-            'status' => 'disetujui',
-            'catatan_dosen' => 'Disetujui karena rekam jejak akademik kuat dan siap mengajar.',
-            'status_seleksi' => 'disetujui',
-            'is_published' => true,
-            'created_at' => '2026-10-27T00:00:00Z',
-        ],
-    ];
-
-    public static function getStoredPendaftar(): array
+    public function index(Request $request): JsonResponse
     {
-        return self::$pendaftar;
+        $pendaftarans = Pendaftaran::query()
+            ->with('lowongan')
+            ->when(
+                auth()->check(),
+                fn (EloquentBuilder $query) => $query->where('user_id', auth()->id()),
+                fn (EloquentBuilder $query) => $query->whereKey(session('mahasiswa.pendaftaran_id', 0))
+            )
+            ->latest()
+            ->get()
+            ->map(fn (Pendaftaran $pendaftaran): array => $this->present($pendaftaran))
+            ->all();
+
+        return response()->json($pendaftarans);
     }
 
-    public static function storePendaftarRecord(array $data): array
+    public function create(int $id): View
     {
-        $record = array_merge([
-            'id' => count(self::$pendaftar) + 1,
-            'status' => 'menunggu',
-            'catatan_dosen' => null,
-            'status_seleksi' => 'menunggu',
-            'is_published' => false,
-            'created_at' => now()->toISOString(),
-        ], $data);
+        $lowongan = Pengumuman::findOrFail($id);
 
-        self::$pendaftar[] = $record;
+        abort_unless($this->isOpen($lowongan), 404, 'Pendaftaran lowongan ini sudah ditutup.');
 
-        return $record;
-    }
-
-    public static function sanitizeForMahasiswa(array $record): array
-    {
-        $publicRecord = $record;
-
-        unset($publicRecord['catatan_dosen']);
-
-        if (! ($publicRecord['is_published'] ?? false)) {
-            unset($publicRecord['status_seleksi']);
-            unset($publicRecord['is_published']);
-        }
-
-        return $publicRecord;
-    }
-
-    public static function sanitizeForDosen(array $record): array
-    {
-        return $record;
-    }
-
-    /**
-     * API list pendaftar untuk sisi dosen/mahasiswa.
-     */
-    public function index(Request $request)
-    {
-        $pendaftar = array_map(function (array $record) use ($request): array {
-            if (str_contains($request->path(), 'dosen/pendaftar')) {
-                return self::sanitizeForDosen($record);
-            }
-
-            return self::sanitizeForMahasiswa($record);
-        }, self::getStoredPendaftar());
-
-        return response()->json($pendaftar);
-    }
-
-    /**
-     * Data dummy lowongan — sama dengan LowonganController.
-     * Nantunya diganti dengan query ke Model/Database.
-     */
-    private function getLowongan(int $id): array
-    {
-        $data = [
-            1 => [
-                'id' => 1,
-                'kode' => 'IF101',
-                'nama' => 'Pemrograman Dasar',
-                'dosen' => 'Dr. Budi Santoso',
-                'sks' => 3,
-                'kuota' => 5,
-                'terisi' => 2,
-                'tenggat' => '30 Nov 2025',
-                'jadwal' => 'Senin 08.00',
-                'status' => 'Dibuka',
+        return view('mahasiswa.pendaftaran', [
+            'lowongan' => [
+                'id' => $lowongan->id,
+                'nama' => $lowongan->mata_kuliah,
+                'syarat_nilai' => $lowongan->syarat_nilai,
+                'syarat_ipk' => $lowongan->syarat_ipk,
+                'nilai_options' => $this->allowedGrades($lowongan),
+                'berkas_diminta' => $this->documents($lowongan),
             ],
-            2 => [
-                'id' => 2,
-                'kode' => 'IF205',
-                'nama' => 'Struktur Data',
-                'dosen' => 'Dr. Siti Rahayu',
-                'sks' => 3,
-                'kuota' => 4,
-                'terisi' => 1,
-                'tenggat' => '28 Nov 2025',
-                'jadwal' => 'Rabu 10.00',
-                'status' => 'Dibuka',
-            ],
-        ];
-
-        abort_if(! isset($data[$id]), 404, 'Lowongan tidak ditemukan.');
-
-        return $data[$id];
+        ]);
     }
 
-    /**
-     * Tampilkan form pendaftaran untuk lowongan tertentu.
-     */
-    public function create(int $id)
-    {
-        $lowongan = $this->getLowongan($id);
-
-        return view('mahasiswa.pendaftaran', compact('lowongan'));
-    }
-
-    /**
-     * Simpan data pendaftaran yang dikirimkan.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'lowongan_id' => ['required', 'integer'],
+            'lowongan_id' => ['required', 'integer', 'exists:pengumuman,id'],
+        ]);
+        $lowongan = Pengumuman::findOrFail($validated['lowongan_id']);
+
+        abort_unless($this->isOpen($lowongan), 404, 'Pendaftaran lowongan ini sudah ditutup.');
+
+        $requiredDocuments = $this->documents($lowongan);
+        $allowedGrades = $this->allowedGrades($lowongan);
+        $ipkRules = $lowongan->syarat_ipk === null
+            ? ['nullable', 'numeric', 'min:0', 'max:4']
+            : ['required', 'numeric', 'min:'.$lowongan->syarat_ipk, 'max:4'];
+
+        $validated = array_merge($validated, $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'nim' => ['required', 'string', 'max:20'],
-            'nilai_matkul' => ['required', 'string'],
-            'ipk' => ['nullable', 'numeric', 'min:0', 'max:4'],
+            'nim' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('pendaftaran', 'nim')
+                    ->where(fn (QueryBuilder $query): QueryBuilder => $query->where('lowongan_id', $lowongan->id)),
+            ],
+            'nilai_matkul' => ['required', Rule::in($allowedGrades)],
+            'ipk' => $ipkRules,
             'motivasi' => ['required', 'string', 'min:50', 'max:1500'],
             'portfolio' => ['nullable', 'url', 'max:255'],
-            'cv' => ['required', 'file', 'mimes:pdf', 'max:2048'],
-            'transkrip' => ['required', 'file', 'mimes:pdf', 'max:2048'],
+            'cv' => [
+                in_array('CV', $requiredDocuments, true) ? 'required' : 'nullable',
+                'file',
+                'mimes:pdf',
+                'max:2048',
+            ],
+            'transkrip' => [
+                in_array('Transkrip nilai', $requiredDocuments, true) ? 'required' : 'nullable',
+                'file',
+                'mimes:pdf',
+                'max:2048',
+            ],
             'persetujuan' => ['required', 'accepted'],
-        ]);
+        ]));
 
-        $directory = 'pendaftaran/'.date('Y').'/'.date('m');
+        $filePaths = [];
 
-        $cvPath = $request->file('cv')->storeAs(
-            $directory,
-            Str::slug(pathinfo($validated['nama'], PATHINFO_FILENAME), '-').'-cv-'.Str::uuid().'.pdf',
-            'public'
-        );
+        try {
+            $pendaftaran = DB::transaction(function () use ($request, $validated, $lowongan, &$filePaths): Pendaftaran {
+                $lockedLowongan = Pengumuman::query()
+                    ->lockForUpdate()
+                    ->findOrFail($lowongan->id);
 
-        $transkripPath = $request->file('transkrip')->storeAs(
-            $directory,
-            Str::slug(pathinfo($validated['nama'], PATHINFO_FILENAME), '-').'-transkrip-'.Str::uuid().'.pdf',
-            'public'
-        );
+                if (! $this->isOpen($lockedLowongan)) {
+                    throw ValidationException::withMessages([
+                        'lowongan_id' => 'Pendaftaran lowongan ini sudah ditutup.',
+                    ]);
+                }
 
-        session()->flash('berkas_tersimpan', [
-            'cv' => $cvPath,
-            'transkrip' => $transkripPath,
-            'cv_url' => Storage::disk('public')->url($cvPath),
-            'transkrip_url' => Storage::disk('public')->url($transkripPath),
-        ]);
+                if (Pendaftaran::query()
+                    ->where('lowongan_id', $lockedLowongan->id)
+                    ->where('nim', $validated['nim'])
+                    ->exists()) {
+                    throw ValidationException::withMessages([
+                        'nim' => 'NIM ini sudah terdaftar pada lowongan tersebut.',
+                    ]);
+                }
 
-        self::storePendaftarRecord([
-            'lowongan_id' => $validated['lowongan_id'],
-            'nama' => $validated['nama'],
-            'nim' => $validated['nim'],
-            'nilai_matkul' => $validated['nilai_matkul'],
-            'ipk' => $validated['ipk'] ?? null,
-            'motivasi' => $validated['motivasi'],
-            'portfolio' => $validated['portfolio'] ?? null,
-            'cv_path' => $cvPath,
-            'transkrip_path' => $transkripPath,
-            'status' => 'menunggu',
-        ]);
+                $directory = 'pendaftaran/'.now()->format('Y/m');
+                $name = Str::slug($validated['nama']);
+                $cvPath = $request->hasFile('cv')
+                    ? $request->file('cv')->storeAs($directory, $name.'-cv-'.Str::uuid().'.pdf', 'public')
+                    : null;
+                if (is_string($cvPath)) {
+                    $filePaths[] = $cvPath;
+                }
+
+                $transkripPath = $request->hasFile('transkrip')
+                    ? $request->file('transkrip')->storeAs($directory, $name.'-transkrip-'.Str::uuid().'.pdf', 'public')
+                    : null;
+                if (is_string($transkripPath)) {
+                    $filePaths[] = $transkripPath;
+                }
+
+                if (($request->hasFile('cv') && $cvPath === false)
+                    || ($request->hasFile('transkrip') && $transkripPath === false)) {
+                    throw new RuntimeException('Dokumen pendaftaran gagal disimpan.');
+                }
+
+                return Pendaftaran::create([
+                    'user_id' => auth()->id(),
+                    'lowongan_id' => $lockedLowongan->id,
+                    'nama' => $validated['nama'],
+                    'nim' => $validated['nim'],
+                    'nilai_matkul' => $validated['nilai_matkul'],
+                    'ipk' => $validated['ipk'] ?? null,
+                    'motivasi' => $validated['motivasi'],
+                    'portfolio' => $validated['portfolio'] ?? null,
+                    'cv_path' => $cvPath,
+                    'transkrip_path' => $transkripPath,
+                    'status' => 'menunggu',
+                    'status_seleksi' => 'menunggu',
+                    'is_published' => false,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            if ($filePaths !== []) {
+                Storage::disk('public')->delete($filePaths);
+            }
+
+            throw $exception;
+        }
+
+        session(['mahasiswa.pendaftaran_id' => $pendaftaran->id]);
 
         return redirect()->route('mahasiswa.status')
-            ->with('success', 'Pendaftaran berhasil dikirim. Berkas sudah disimpan di storage publik dan pantau status di halaman ini.');
+            ->with('success', 'Pendaftaran berhasil dikirim. Pantau statusnya di halaman ini.');
+    }
+
+    private function isOpen(Pengumuman $lowongan): bool
+    {
+        $accepted = $lowongan->pendaftarans()
+            ->where('status_seleksi', 'disetujui')
+            ->where('is_published', true)
+            ->count();
+
+        return $lowongan->status_aktif
+            && $lowongan->tenggat?->isFuture()
+            && $accepted < $lowongan->kuota;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function documents(Pengumuman $lowongan): array
+    {
+        $documents = json_decode((string) $lowongan->berkas_diminta, true);
+
+        return is_array($documents) ? $documents : ['CV', 'Transkrip nilai'];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedGrades(Pengumuman $lowongan): array
+    {
+        $gradeScale = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'E'];
+        $minimumGradeIndex = array_search($lowongan->syarat_nilai, $gradeScale, true);
+
+        return $minimumGradeIndex === false
+            ? $gradeScale
+            : array_slice($gradeScale, 0, $minimumGradeIndex + 1);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function present(Pendaftaran $pendaftaran): array
+    {
+        return [
+            'id' => $pendaftaran->id,
+            'lowongan_id' => $pendaftaran->lowongan_id,
+            'matakuliah' => $pendaftaran->lowongan?->mata_kuliah,
+            'nama' => $pendaftaran->nama,
+            'nim' => $pendaftaran->nim,
+            'nilai_matkul' => $pendaftaran->nilai_matkul,
+            'ipk' => $pendaftaran->ipk,
+            'motivasi' => $pendaftaran->motivasi,
+            'portfolio' => $pendaftaran->portfolio,
+            'cv_path' => $pendaftaran->cv_path,
+            'transkrip_path' => $pendaftaran->transkrip_path,
+            'status' => $pendaftaran->status,
+            'status_seleksi' => $pendaftaran->is_published ? $pendaftaran->status_seleksi : null,
+            'created_at' => $pendaftaran->created_at?->toISOString(),
+        ];
     }
 }

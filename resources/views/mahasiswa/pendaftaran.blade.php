@@ -27,6 +27,17 @@
         @csrf
         <input type="hidden" name="lowongan_id" value="{{ $lowongan['id'] }}">
 
+        @if($errors->any())
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">
+                <p class="font-semibold">Periksa kembali formulir pendaftaran.</p>
+                <ul class="mt-2 list-inside list-disc">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         {{-- ===== Bagian 1: Informasi Akademik ===== --}}
         <div>
             <h2 class="font-extrabold">Informasi Akademik</h2>
@@ -58,16 +69,19 @@
                        value="{{ old('nim') }}"
                        placeholder="Contoh: 105222056"
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                @error('nim')
+                    <span class="mt-1 block text-xs text-red-600">{{ $message }}</span>
+                @enderror
             </label>
 
             {{-- Nilai Matkul --}}
             <label class="block">
-                <span class="mb-2 block text-sm font-semibold">Nilai {{ $lowongan['nama'] }} *</span>
+                <span class="mb-2 block text-sm font-semibold">Nilai {{ $lowongan['nama'] }}{{ $lowongan['syarat_nilai'] ? ' (minimal '.$lowongan['syarat_nilai'].')' : '' }} *</span>
                 <select name="nilai_matkul"
                         required
                         class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Pilih nilai</option>
-                    @foreach(['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'E'] as $nilai)
+                    @foreach($lowongan['nilai_options'] as $nilai)
                         <option value="{{ $nilai }}" @selected(old('nilai_matkul') === $nilai)>
                             {{ $nilai }}
                         </option>
@@ -77,13 +91,19 @@
 
             {{-- IPK --}}
             <label class="block">
-                <span class="mb-2 block text-sm font-semibold">IPK (opsional)</span>
+                <span class="mb-2 block text-sm font-semibold">
+                    IPK{{ $lowongan['syarat_ipk'] !== null ? ' (minimal '.number_format((float) $lowongan['syarat_ipk'], 2, ',', '.').') *' : ' (opsional)' }}
+                </span>
                 <input type="number"
                        name="ipk"
-                       min="0" max="4" step="0.01"
+                       min="{{ $lowongan['syarat_ipk'] ?? 0 }}" max="4" step="0.01"
+                       @required($lowongan['syarat_ipk'] !== null)
                        value="{{ old('ipk') }}"
                        placeholder="Contoh: 3.65"
                        class="w-full rounded-xl border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                @error('ipk')
+                    <span class="mt-1 block text-xs text-red-600">{{ $message }}</span>
+                @enderror
             </label>
 
         </div>
@@ -119,11 +139,12 @@
         {{-- ===== Bagian 3: Dokumen ===== --}}
         <div class="border-t border-slate-100 pt-6">
             <h2 class="font-extrabold">Unggah Dokumen PDF</h2>
-            <p class="mt-1 text-sm text-slate-500">Format PDF, maksimal 2 MB per berkas.</p>
+            <p class="mt-1 text-sm text-slate-500">Format PDF, maksimal 2 MB per berkas. Dokumen yang diminta: {{ implode(', ', $lowongan['berkas_diminta']) ?: 'tidak ada' }}.</p>
 
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
 
                 {{-- CV --}}
+                @if(in_array('CV', $lowongan['berkas_diminta'], true))
                 <label class="block rounded-xl border border-dashed border-slate-300 p-4">
                     <span class="mb-2 block text-sm font-semibold">CV / Resume *</span>
                     <input type="file"
@@ -135,9 +156,12 @@
                                   file:bg-blue-50 file:px-3 file:py-2
                                   file:text-xs file:font-bold file:text-[#2058B2]">
                     <span class="mt-2 block text-xs text-slate-400">PDF · Maks. 2 MB</span>
+                    @error('cv') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
                 </label>
+                @endif
 
                 {{-- Transkrip --}}
+                @if(in_array('Transkrip nilai', $lowongan['berkas_diminta'], true))
                 <label class="block rounded-xl border border-dashed border-slate-300 p-4">
                     <span class="mb-2 block text-sm font-semibold">Transkrip nilai *</span>
                     <input type="file"
@@ -149,7 +173,9 @@
                                   file:bg-blue-50 file:px-3 file:py-2
                                   file:text-xs file:font-bold file:text-[#2058B2]">
                     <span class="mt-2 block text-xs text-slate-400">PDF · Maks. 2 MB</span>
+                    @error('transkrip') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
                 </label>
+                @endif
 
             </div>
         </div>

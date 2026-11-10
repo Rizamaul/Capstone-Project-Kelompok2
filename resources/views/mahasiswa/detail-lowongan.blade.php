@@ -31,23 +31,27 @@
 
         {{-- Syarat --}}
         <h2 class="mt-7 text-lg font-extrabold">Syarat pendaftaran</h2>
-        <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
-            <li>Nilai minimal {{ $lowongan['syarat'] }} pada mata kuliah terkait.</li>
-            <li>Memiliki IPK kumulatif minimal 3,25.</li>
-            <li>Bersedia mendampingi praktikum setiap minggu.</li>
-            <li>Mampu bekerja kolaboratif dan komunikatif.</li>
-            <li>Jadwal tidak bentrok dengan KRS semester berjalan.</li>
-        </ul>
+        <div class="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+            @if($lowongan['syarat_nilai'])
+                <p><span class="font-semibold">Nilai minimum:</span> {{ $lowongan['syarat_nilai'] }}</p>
+            @endif
+            @if($lowongan['syarat_ipk'])
+                <p><span class="font-semibold">IPK minimum:</span> {{ number_format((float) $lowongan['syarat_ipk'], 2, ',', '.') }}</p>
+            @endif
+            <p class="whitespace-pre-line">{{ $lowongan['persyaratan'] ?: 'Tidak ada persyaratan tambahan.' }}</p>
+        </div>
 
         {{-- Dokumen --}}
         <h2 class="mt-7 text-lg font-extrabold">Dokumen yang diperlukan</h2>
         <div class="mt-3 grid gap-3 sm:grid-cols-2">
-            @foreach(['CV / Resume PDF', 'Transkrip nilai PDF'] as $doc)
+            @forelse($lowongan['berkas_diminta'] as $doc)
             <div class="flex items-center gap-3 rounded-xl border border-slate-200 p-4">
                 <span class="rounded-lg bg-red-50 p-2 text-sm font-extrabold text-red-600">PDF</span>
                 <span class="text-sm font-semibold">{{ $doc }}</span>
             </div>
-            @endforeach
+            @empty
+                <p class="text-sm text-slate-500">Tidak ada dokumen tambahan yang diminta.</p>
+            @endforelse
         </div>
 
     </section>
@@ -56,7 +60,7 @@
     <aside class="h-fit rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
         {{-- Status --}}
-        <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+        <span class="rounded-full px-3 py-1 text-xs font-bold {{ $lowongan['status'] === 'Dibuka' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">
             {{ $lowongan['status'] }}
         </span>
 
@@ -69,7 +73,8 @@
                 ['Kuota',          $lowongan['terisi'] . ' / ' . $lowongan['kuota'] . ' asisten'],
                 ['Dosen Pengampu', $lowongan['dosen']],
                 ['Jadwal',         $lowongan['jadwal']],
-                ['Lokasi',         'Lab Komputer'],
+                ['Kelas',          $lowongan['kelas'] ?? 'Belum ditentukan'],
+                ['Semester',       $lowongan['semester'] ?? 'Belum ditentukan'],
             ] as $row)
             <div class="flex justify-between gap-4 border-b border-slate-100 pb-3">
                 <dt class="text-slate-500">{{ $row[0] }}</dt>

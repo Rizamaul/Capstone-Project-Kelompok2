@@ -33,9 +33,13 @@
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         Buat Lowongan baru
                     </a>
-                    <a href="/dosen/lowongan/draft" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/lowongan/draft') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                    <a href="{{ route('dosen.lowongan.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/lowongan') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        Draft Lowongan Asdos
+                        Kelola Lowongan
+                    </a>
+                    <a href="{{ route('dosen.pendaftar.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/pendaftar*') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.824-1M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.824-1M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Pendaftar
                     </a>
                     <a href="/dosen/timesheet" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold {{ request()->is('dosen/timesheet*') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
