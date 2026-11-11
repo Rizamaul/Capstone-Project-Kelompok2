@@ -103,6 +103,8 @@
                     <a href="#" @click.prevent="selected = 'Menunggu'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Menunggu</a>
                     <a href="#" @click.prevent="selected = 'Disetujui'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Disetujui</a>
                     <a href="#" @click.prevent="selected = 'Ditolak'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ditolak</a>
+                    <a href="#" @click.prevent="selected = 'Menunggu'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Status</a>
+
                 </div>
             </div>
             
@@ -115,6 +117,8 @@
                 <div x-show="open" x-transition class="absolute left-0 mt-2 w-44 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
                     <a href="#" @click.prevent="selected = 'Ganjil'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Ganjil</a>
                     <a href="#" @click.prevent="selected = 'Genap'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Genap</a>
+                    <a href="#" @click.prevent="selected = 'Genap'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Semester</a>
+
                 </div>
             </div>
 
@@ -127,6 +131,8 @@
                 <div x-show="open" x-transition class="absolute left-0 mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-30 py-1" style="display: none;">
                     <a href="#" @click.prevent="selected = 'Algoritma Struktur Data'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Algoritma Struktur Data</a>
                     <a href="#" @click.prevent="selected = 'Jaringan Komputer'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Jaringan Komputer</a>
+                    <a href="#" @click.prevent="selected = 'Jaringan Komputer'; open = false" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-[#1E5EFF]">Semua Matakuliah</a>
+
                 </div>
             </div>
 
