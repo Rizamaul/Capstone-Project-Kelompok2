@@ -107,11 +107,20 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/pendaftar', [DosenPendaftaran::class, 'index'])
         ->name('pendaftar.index');
 
+    Route::get('/pendaftar/{pendaftaran}', [DosenPendaftaran::class, 'show'])
+        ->name('pendaftar.show');
+
     Route::patch('/pendaftar/{pendaftaran}/status', [DosenPendaftaran::class, 'updateStatus'])
         ->name('pendaftar.status');
 
+    Route::get('/notifikasi', fn () => view('dosen.notifikasi.index'))
+        ->name('notifikasi');
+
     Route::get('/timesheet', [DosenTimesheet::class, 'index'])
         ->name('timesheet');
+
+    Route::get('/timesheet/daftar', [DosenTimesheet::class, 'index'])
+        ->name('timesheet.index');
 
     Route::get('/timesheet/{id}', [DosenTimesheet::class, 'show'])
         ->name('timesheet.show');
