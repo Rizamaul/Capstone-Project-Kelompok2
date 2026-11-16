@@ -1,7 +1,24 @@
 @extends('layouts.dosen')
 
 @section('content')
-<div class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" x-data="{ showPdfModal: false }">
+@php
+    $cvUrl = $pendaftaran->cv_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) : null;
+    $transkripUrl = $pendaftaran->transkrip_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) : null;
+    $defaultPdfUrl = $cvUrl ?: $transkripUrl;
+    $defaultPdfTitle = $cvUrl ? 'Curriculum Vitae (CV) - ' . $pendaftaran->nama : ($transkripUrl ? 'Transkrip Nilai / KSM - ' . $pendaftaran->nama : '');
+@endphp
+
+<div class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" 
+     x-data="{ 
+         showPdfModal: false,
+         activePdfTitle: @js($defaultPdfTitle),
+         activePdfUrl: @js($defaultPdfUrl),
+         openPreview(title, url) {
+             this.activePdfTitle = title;
+             this.activePdfUrl = url;
+             this.showPdfModal = true;
+         }
+     }">
 
     <!-- KEMBALI & HEADER -->
     <div class="mb-6">
@@ -55,13 +72,13 @@
                 </h2>
 
                 <div class="flex items-center gap-4 pb-6 border-b border-gray-100">
-                    <div class="w-16 h-16 rounded-2xl bg-blue-50 text-[#1E5EFF] flex items-center justify-center font-bold text-xl border border-blue-100">
+                    <div class="w-16 h-16 rounded-2xl bg-blue-50 text-[#1E5EFF] flex items-center justify-center font-bold text-xl border border-blue-100 shrink-0">
                         {{ strtoupper(substr($pendaftaran->nama, 0, 2)) }}
                     </div>
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">{{ $pendaftaran->nama }}</h3>
                         <p class="text-xs text-gray-500">NIM : <span class="font-mono font-semibold text-gray-800">{{ $pendaftaran->nim }}</span></p>
-                        <p class="text-xs text-blue-600 font-medium mt-1">Mata Kuliah Dilamar: {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan' }}</p>
+                        <p class="text-xs text-blue-600 font-medium mt-1">Mata Kuliah Dilamar: {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan' }} ({{ $pendaftaran->lowongan?->kode ?? '-' }})</p>
                     </div>
                 </div>
 
@@ -104,53 +121,72 @@
 
         </div>
 
-        <!-- KOLOM KANAN: PREVIEW BERKAS PDF -->
+        <!-- KOLOM KANAN: DOKUMEN & PREVIEW BERKAS PDF -->
         <div class="space-y-6">
             <div class="bg-white rounded-2xl border border-gray-200/80 p-6 shadow-sm space-y-4">
                 <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                    <span>📄</span> Dokumen Persyaratan Pelamar
+                    <span>📄</span> Dokumen Persyaratan & KSM
                 </h2>
-                <p class="text-xs text-gray-500">Periksa lembar CV dan transkrip nilai langsung dari peramban.</p>
+                <p class="text-xs text-gray-500">Periksa lembar CV, KSM, dan transkrip nilai langsung dari peramban.</p>
 
-                @php
-                    $activePdfUrl = $pendaftaran->cv_path 
-                        ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) 
-                        : ($pendaftaran->transkrip_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) : null);
-                @endphp
-
-                @if($pendaftaran->cv_path)
-                    <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs">
-                            <span class="text-xl">📑</span>
-                            <div>
-                                <p class="font-bold text-gray-800">Curriculum Vitae (CV)</p>
-                                <p class="text-[10px] text-gray-400">Format PDF</p>
+                @if($cvUrl)
+                    <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 text-xs min-w-0">
+                            <span class="text-xl shrink-0">📑</span>
+                            <div class="truncate">
+                                <p class="font-bold text-gray-800 truncate">Curriculum Vitae (CV)</p>
+                                <p class="text-[10px] text-gray-400">Berkas PDF</p>
                             </div>
                         </div>
-                        <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) }}" target="_blank" class="px-3 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700">
-                            Buka PDF
-                        </a>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" @click="openPreview('Curriculum Vitae (CV) - {{ $pendaftaran->nama }}', '{{ $cvUrl }}')" class="px-2.5 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer">
+                                Pratinjau
+                            </button>
+                            <a href="{{ $cvUrl }}" target="_blank" download class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
+                                ⬇
+                            </a>
+                        </div>
                     </div>
                 @endif
 
-                @if($pendaftaran->transkrip_path)
-                    <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs">
-                            <span class="text-xl">📑</span>
-                            <div>
-                                <p class="font-bold text-gray-800">Transkrip Nilai</p>
-                                <p class="text-[10px] text-gray-400">Format PDF</p>
+                @if($transkripUrl)
+                    <div class="p-3 bg-blue-50/50 rounded-xl border border-blue-100 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 text-xs min-w-0">
+                            <span class="text-xl shrink-0">📑</span>
+                            <div class="truncate">
+                                <p class="font-bold text-gray-800 truncate">Transkrip Nilai / KSM</p>
+                                <p class="text-[10px] text-gray-400">Berkas PDF</p>
                             </div>
                         </div>
-                        <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) }}" target="_blank" class="px-3 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700">
-                            Buka PDF
-                        </a>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" @click="openPreview('Transkrip Nilai / KSM - {{ $pendaftaran->nama }}', '{{ $transkripUrl }}')" class="px-2.5 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer">
+                                Pratinjau
+                            </button>
+                            <a href="{{ $transkripUrl }}" target="_blank" download class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
+                                ⬇
+                            </a>
+                        </div>
                     </div>
                 @endif
 
-                @if(! $pendaftaran->cv_path && ! $pendaftaran->transkrip_path)
+                @if(! $cvUrl && ! $transkripUrl)
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 text-center text-xs text-gray-500">
                         Tidak ada berkas PDF yang terlampir.
+                    </div>
+                @else
+                    <!-- Inline Preview Box -->
+                    <div class="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col mt-4">
+                        <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between text-xs font-semibold text-gray-700">
+                            <span>Pratinjau Berkas Aktif</span>
+                            <button type="button" @click="openPreview(activePdfTitle, activePdfUrl)" class="text-[#1E5EFF] hover:underline flex items-center gap-1 text-[11px] font-bold cursor-pointer">
+                                Perbesar Modal ↗
+                            </button>
+                        </div>
+                        <div class="h-64 w-full bg-slate-100 relative">
+                            <template x-if="activePdfUrl">
+                                <iframe :src="activePdfUrl" class="w-full h-full border-0"></iframe>
+                            </template>
+                        </div>
                     </div>
                 @endif
             </div>
@@ -158,6 +194,48 @@
 
     </div>
 
+    <!-- MODAL POPUP PREVIEW PDF DOKUMEN / KSM -->
+    <div x-show="showPdfModal" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" 
+         x-cloak>
+        <div @click.away="showPdfModal = false" class="bg-white rounded-3xl max-w-4xl w-full h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-gray-100">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">📑</span>
+                    <div>
+                        <h3 class="font-bold text-gray-900 text-sm" x-text="activePdfTitle || 'Pratinjau Dokumen Berkas'"></h3>
+                        <p class="text-[11px] text-gray-500">Pratinjau dokumen PDF langsung dari peramban dosen</p>
+                    </div>
+                </div>
+                <button type="button" @click="showPdfModal = false" class="w-8 h-8 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center font-bold hover:bg-gray-300 transition-colors cursor-pointer">✕</button>
+            </div>
+            
+            <!-- Modal Body (Iframe PDF Viewer) -->
+            <div class="flex-1 bg-gray-100 p-2 sm:p-4">
+                <template x-if="activePdfUrl">
+                    <iframe :src="activePdfUrl" class="w-full h-full rounded-xl border border-gray-200 bg-white shadow-inner"></iframe>
+                </template>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-3 border-t border-gray-100 flex items-center justify-between bg-gray-50">
+                <span class="text-xs text-gray-500 hidden sm:inline">Periksa kesesuaian berkas dengan kriteria penerimaan</span>
+                <div class="flex items-center gap-2 ml-auto">
+                    <button type="button" @click="showPdfModal = false" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer">Tutup</button>
+                    <a :href="activePdfUrl" target="_blank" download class="px-4 py-2 bg-[#1E5EFF] text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm">
+                        <span>⬇</span> Unduh PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
-
