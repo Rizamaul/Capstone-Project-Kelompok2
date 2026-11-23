@@ -22,6 +22,13 @@ class PendaftaranController extends Controller
         return view('dosen.pendaftar.index', compact('pendaftarans'));
     }
 
+    public function show(Pendaftaran $pendaftaran): View
+    {
+        $pendaftaran->load('lowongan');
+
+        return view('dosen.pendaftaran.show', compact('pendaftaran'));
+    }
+
     public function updateStatus(Request $request, Pendaftaran $pendaftaran): RedirectResponse
     {
         $validated = $request->validate([

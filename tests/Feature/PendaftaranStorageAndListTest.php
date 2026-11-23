@@ -56,6 +56,23 @@ class PendaftaranStorageAndListTest extends TestCase
             ->assertSee('Mahasiswa memiliki performa akademik baik');
     }
 
+    public function test_dosen_can_view_pendaftaran_show_page_with_details_and_pdf(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'cv_path' => 'pendaftaran/cv/sample.pdf',
+            'transkrip_path' => 'pendaftaran/transkrip/sample.pdf',
+        ]);
+
+        $response = $this->get('/dosen/pendaftar/'.$pendaftaran->id);
+
+        $response->assertOk()
+            ->assertSee($pendaftaran->nama)
+            ->assertSee($pendaftaran->nim)
+            ->assertSee('Pratinjau Berkas Pelamar')
+            ->assertSee('Curriculum Vitae (CV)')
+            ->assertSee('Transkrip Nilai / KSM');
+    }
+
     public function test_dosen_can_publish_an_application_decision(): void
     {
         $pendaftaran = $this->createPendaftaran();

@@ -5,15 +5,29 @@ namespace App\Http\Controllers\Mahasiswa;
 use App\Http\Controllers\Controller;
 use App\Models\Pengumuman;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LowonganController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $lowongans = $this->queryLowongans()
+        $query = $this->queryLowongans();
+
+        if ($request->filled('q')) {
+            $keyword = trim((string) $request->input('q'));
+            $query->where(function (Builder $builder) use ($keyword) {
+                $builder->where('mata_kuliah', 'like', "%{$keyword}%")
+                    ->orWhere('kode', 'like', "%{$keyword}%");
+            });
+        }
+
+        $lowongans = $query
             ->get()
             ->map(fn (Pengumuman $lowongan): array => $this->present($lowongan))
+            ->when($request->filled('status') && $request->input('status') !== 'Semua', function ($collection) use ($request) {
+                return $collection->where('status', $request->input('status'))->values();
+            })
             ->all();
 
         return view('mahasiswa.lowongan', compact('lowongans'));

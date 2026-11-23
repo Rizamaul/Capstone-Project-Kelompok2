@@ -35,11 +35,14 @@ class TimesheetController extends Controller
         }
 
         $entries = $query->paginate(15)->withQueryString();
+        $totalJamDisetujui = (float) Timesheet::query()->where('status_approval', 'approved')->sum('jumlah_jam');
+
         $statistik = [
             'disetujui' => Timesheet::query()->where('status_approval', 'approved')->count(),
             'menunggu' => Timesheet::query()->where('status_approval', 'pending')->count(),
-            'total_jam' => (float) Timesheet::query()->where('status_approval', 'approved')->sum('jumlah_jam'),
+            'total_jam' => $totalJamDisetujui,
             'total' => Timesheet::query()->count(),
+            'estimasi_honor' => $totalJamDisetujui * 35000,
         ];
 
         return view('dosen.timesheet.index', compact('entries', 'statistik', 'filters'));
