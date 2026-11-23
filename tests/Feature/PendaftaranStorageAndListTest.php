@@ -53,7 +53,8 @@ class PendaftaranStorageAndListTest extends TestCase
 
         $response->assertOk()
             ->assertSee($pendaftaran->nama)
-            ->assertSee('Mahasiswa memiliki performa akademik baik');
+            ->assertSee('Mahasiswa memiliki performa akademik baik')
+            ->assertDontSee('Peninjauan Berkas Lengkap');
     }
 
     public function test_dosen_can_view_pendaftaran_show_page_with_details_and_pdf(): void
@@ -206,6 +207,73 @@ class PendaftaranStorageAndListTest extends TestCase
             ->assertSee('Selamat, pendaftaran disetujui.');
     }
 
+    public function test_dosen_can_verify_berkas_and_it_shows_green_in_student_status(): void
+    {
+        $pendaftaran = $this->createPendaftaran();
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/verifikasi-berkas', [
+            'status' => 'diverifikasi',
+        ]);
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'berkas_diverifikasi' => true,
+            'status_berkas' => 'diverifikasi',
+        ]);
+
+        $studentResponse = $this->get('/mahasiswa/status/'.$pendaftaran->id);
+        $studentResponse->assertOk()
+            ->assertSee('Dosen telah meninjau berkas pendaftaran.');
+    }
+
+    public function test_dosen_can_reject_berkas_with_reason_and_shows_in_student_status(): void
+    {
+        $pendaftaran = $this->createPendaftaran();
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/verifikasi-berkas', [
+            'status' => 'ditolak',
+            'alasan' => 'Format transkrip nilai belum memuat semester terbaru.',
+        ]);
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'berkas_diverifikasi' => false,
+            'status_berkas' => 'ditolak',
+            'catatan_berkas' => 'Format transkrip nilai belum memuat semester terbaru.',
+        ]);
+
+        $studentResponse = $this->get('/mahasiswa/status/'.$pendaftaran->id);
+        $studentResponse->assertOk()
+            ->assertSee('Format transkrip nilai belum memuat semester terbaru.')
+            ->assertSee('Kekurangan / Penolakan Berkas');
+    }
+
+    public function test_dosen_can_set_interview_schedule_and_location(): void
+    {
+        $pendaftaran = $this->createPendaftaran();
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/wawancara', [
+            'jadwal_wawancara' => '2026-11-28T10:00',
+            'lokasi_wawancara' => 'Lab Komputer 2',
+            'catatan_wawancara' => 'Bawa kartu mahasiswa',
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'lokasi_wawancara' => 'Lab Komputer 2',
+            'catatan_wawancara' => 'Bawa kartu mahasiswa',
+            'berkas_diverifikasi' => true,
+        ]);
+
+        $studentResponse = $this->get('/mahasiswa/status/'.$pendaftaran->id);
+        $studentResponse->assertOk()
+            ->assertSee('Jadwal Wawancara Seleksi')
+            ->assertSee('Lab Komputer 2');
+    }
+
     private function createLowongan(array $attributes = []): Pengumuman
     {
         return Pengumuman::query()->create(array_merge([
@@ -257,8 +325,8 @@ class PendaftaranStorageAndListTest extends TestCase
             'ipk' => '3.70',
             'motivasi' => 'Saya sangat tertarik dan memiliki kemampuan yang dibutuhkan untuk membantu praktikum.',
             'portfolio' => 'https://example.com/portfolio',
-            'cv' => new UploadedFile(__DIR__.'/fixtures/sample.pdf', 'sample.pdf', 'application/pdf', null, true),
-            'transkrip' => new UploadedFile(__DIR__.'/fixtures/sample.pdf', 'sample.pdf', 'application/pdf', null, true),
+            'cv' => UploadedFile::fake()->create('sample.pdf', 100, 'application/pdf'),
+            'transkrip' => UploadedFile::fake()->create('sample.pdf', 100, 'application/pdf'),
             'persetujuan' => '1',
         ], $overrides);
     }

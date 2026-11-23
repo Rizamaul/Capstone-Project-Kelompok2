@@ -20,6 +20,13 @@ class Pendaftaran extends Model
         'portfolio',
         'cv_path',
         'transkrip_path',
+        'berkas_diverifikasi',
+        'status_berkas',
+        'catatan_berkas',
+        'waktu_verifikasi_berkas',
+        'jadwal_wawancara',
+        'lokasi_wawancara',
+        'catatan_wawancara',
         'status',
         'catatan_dosen',
         'status_seleksi',
@@ -29,6 +36,8 @@ class Pendaftaran extends Model
     protected $casts = [
         'ipk' => 'decimal:2',
         'is_published' => 'boolean',
+        'berkas_diverifikasi' => 'boolean',
+        'waktu_verifikasi_berkas' => 'datetime',
     ];
 
     public function lowongan(): BelongsTo

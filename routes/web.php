@@ -54,8 +54,23 @@ Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::post('/pendaftaran', [MahasiswaPendaftaran::class, 'store'])
         ->name('pendaftaran.store');
 
+    Route::get('/pendaftaran/{id}/edit', [MahasiswaPendaftaran::class, 'edit'])
+        ->name('pendaftaran.edit');
+
+    Route::put('/pendaftaran/{id}', [MahasiswaPendaftaran::class, 'update'])
+        ->name('pendaftaran.update');
+
     Route::get('/status', [MahasiswaStatus::class, 'index'])
         ->name('status');
+
+    Route::get('/status/{id}', [MahasiswaStatus::class, 'show'])
+        ->name('status.show');
+
+    Route::get('/status/{id}/edit', [MahasiswaPendaftaran::class, 'edit'])
+        ->name('status.edit');
+
+    Route::put('/status/{id}', [MahasiswaPendaftaran::class, 'update'])
+        ->name('status.update');
 
     Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
         ->name('pendaftar.index');
@@ -65,6 +80,15 @@ Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
 
     Route::post('/timesheet', [MahasiswaTimesheet::class, 'store'])
         ->name('timesheet.store');
+
+    Route::get('/timesheet/{timesheet}', [MahasiswaTimesheet::class, 'show'])
+        ->name('timesheet.show');
+
+    Route::get('/timesheet/{timesheet}/edit', [MahasiswaTimesheet::class, 'edit'])
+        ->name('timesheet.edit');
+
+    Route::put('/timesheet/{timesheet}', [MahasiswaTimesheet::class, 'update'])
+        ->name('timesheet.update');
 });
 
 /*
@@ -112,6 +136,12 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
 
     Route::patch('/pendaftar/{pendaftaran}/status', [DosenPendaftaran::class, 'updateStatus'])
         ->name('pendaftar.status');
+
+    Route::post('/pendaftar/{pendaftaran}/verifikasi-berkas', [DosenPendaftaran::class, 'verifikasiBerkas'])
+        ->name('pendaftar.verifikasi-berkas');
+
+    Route::post('/pendaftar/{pendaftaran}/wawancara', [DosenPendaftaran::class, 'aturWawancara'])
+        ->name('pendaftar.wawancara');
 
     Route::get('/notifikasi', fn () => view('dosen.notifikasi.index'))
         ->name('notifikasi');

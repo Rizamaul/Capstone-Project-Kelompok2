@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal Dosen - ASISTIN</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Portal Dosen') - ASISTIN</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="bg-[#F8F9FA] font-sans antialiased overflow-x-hidden">
+<body class="bg-[#F8F9FA] font-sans antialiased text-gray-800 overflow-x-hidden">
 
     <!-- Container Utama Full Screen -->
     <div class="flex min-h-screen w-full relative">
@@ -16,43 +19,78 @@
             <div>
                 <!-- Logo & Brand Universitas Pertamina -->
                 <div class="flex items-center gap-3 mb-8">
-                    <img src="{{ asset('images/logo-uper.svg') }}" alt="Logo UPER" class="w-15 h-10 object-contain"> <!-- Sesuaikan path logo jika ada -->
+                    <img src="{{ asset('images/logo-uper.svg') }}" alt="Logo UPER" class="w-12 h-10 object-contain">
                     <div>
-                        <h1 class="text-base font-bold text-gray-900 tracking-tight">ASISTIN</h1>
-                        <p class="text-xs text-gray-500">PORTAL DOSEN</p>
+                        <h1 class="text-base font-bold text-gray-900 tracking-tight leading-none">ASISTIN</h1>
+                        <p class="text-[10px] text-gray-400 font-semibold tracking-wider mt-1">PORTAL DOSEN</p>
                     </div>
                 </div>
 
                 <!-- Navigasi Menu -->
                 <nav class="space-y-1.5">
-                    <a href="/dosen/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold {{ request()->is('dosen/dashboard') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                        Dashboard
+                    @php
+                        $isDashboard = request()->is('dosen/dashboard');
+                        $isCreateLowongan = request()->is('dosen/lowongan/create');
+                        $isKelolaLowongan = request()->is('dosen/lowongan') || (request()->is('dosen/lowongan/*') && !request()->is('dosen/lowongan/create'));
+                        $isPendaftar = request()->is('dosen/pendaftar*');
+                        $isTimesheet = request()->is('dosen/timesheet*');
+                    @endphp
+
+                    <!-- Dashboard -->
+                    <a href="{{ route('dosen.dashboard') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors {{ $isDashboard ? 'bg-[#EBF3FF] text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5 {{ $isDashboard ? 'text-[#1E5EFF]' : 'text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                        <span>Dashboard</span>
                     </a>
-                    <a href="/dosen/lowongan/create" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/lowongan/create') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        Buat Lowongan baru
+
+                    <!-- Buat Lowongan baru -->
+                    <a href="{{ route('dosen.lowongan.create') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors {{ $isCreateLowongan ? 'bg-[#EBF3FF] text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5 {{ $isCreateLowongan ? 'text-[#1E5EFF]' : 'text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Buat Lowongan baru</span>
                     </a>
-                    <a href="{{ route('dosen.lowongan.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/lowongan') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        Kelola Lowongan
+
+                    <!-- Kelola Lowongan -->
+                    <a href="{{ route('dosen.lowongan.index') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors {{ $isKelolaLowongan ? 'bg-[#EBF3FF] text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5 {{ $isKelolaLowongan ? 'text-[#1E5EFF]' : 'text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>Kelola Lowongan</span>
                     </a>
-                    <a href="{{ route('dosen.pendaftar.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium {{ request()->is('dosen/pendaftar*') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.824-1M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.824-1M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        Pendaftar
+
+                    <!-- Pendaftar -->
+                    <a href="{{ route('dosen.pendaftar.index') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors {{ $isPendaftar ? 'bg-[#EBF3FF] text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5 {{ $isPendaftar ? 'text-[#1E5EFF]' : 'text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.824-1M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.824-1M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>Pendaftar</span>
                     </a>
-                    <a href="/dosen/timesheet" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold {{ request()->is('dosen/timesheet*') ? 'bg-blue-50 text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    Timesheet
+
+                    <!-- Timesheet -->
+                    <a href="{{ route('dosen.timesheet') }}" 
+                       class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors {{ $isTimesheet ? 'bg-[#EBF3FF] text-[#1E5EFF]' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <svg class="w-5 h-5 {{ $isTimesheet ? 'text-[#1E5EFF]' : 'text-gray-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span>Timesheet</span>
                     </a>
                 </nav>
             </div>
 
-            <!-- Tombol Logout -->
+            <!-- Tombol Logout (Sama dengan Mahasiswa: Abu-abu, hover merah) -->
             <div>
-                <a href="{{ route('home') }}" aria-label="Keluar ke pilihan ruang kerja" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
-                    Keluar
+                <a href="{{ route('home') }}" aria-label="Keluar ke pilihan ruang kerja" class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-red-600 transition-colors group">
+                    <svg class="w-5 h-5 text-gray-500 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>Log Out</span>
+                    <span class="sr-only">Keluar</span>
                 </a>
             </div>
         </aside>
@@ -62,11 +100,12 @@
             
             <!-- Navbar Atas  -->
             <header class="h-20 bg-white border-b border-gray-200 sticky top-0 z-20 flex items-center justify-between px-8 w-full">
-                <div class="flex flex-1 min-w-0 items-center gap-3">                    <!-- Badge Semester Ganjil 2026 -->
+                <div class="flex flex-1 min-w-0 items-center gap-3">
+                    <!-- Badge Semester Ganjil 2026 -->
                     <div class="flex items-center shrink-0">
-                        <div class="flex items-center gap-2 bg-[#EBF1FF] text-[#1E5EFF] px-4 py-2 rounded-xl text-sm font-semibold border border-blue-100 whitespace-nowrap">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-2 bg-[#EDF5FF] text-[#2058B2] text-xs font-semibold rounded-xl">
                             <span class="w-2 h-2 rounded-full bg-[#1E5EFF]"></span>
-                            Semester Ganjil 2026
+                            <span>Semester Ganjil 2026</span>
                         </div>
                     </div>
 
@@ -95,7 +134,6 @@
 
                     <!-- Profil Dosen -->
                     <div class="flex items-center gap-3 pl-6 border-l border-gray-200">
-                        <!-- Beri warna fallback bg-gray-100 jika gambar patah/belum ada -->
                         <img src="{{ asset('images/foto-avatar.svg') }}" alt="Foto" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-xs bg-gray-100">
                         <div>
                             <p class="text-sm font-bold text-gray-900 whitespace-nowrap">Nama Dosen Pemangku</p>
@@ -116,4 +154,3 @@
     @stack('scripts')
 </body>
 </html>
-

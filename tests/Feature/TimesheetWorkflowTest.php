@@ -173,6 +173,50 @@ class TimesheetWorkflowTest extends TestCase
         ]);
     }
 
+    public function test_mahasiswa_can_view_timesheet_detail_with_edit_button(): void
+    {
+        $timesheet = $this->createPendingTimesheet();
+
+        $response = $this->get('/mahasiswa/timesheet/'.$timesheet->id);
+
+        $response->assertOk()
+            ->assertSee('Detail Timesheet')
+            ->assertSee('Edit Timesheet')
+            ->assertSee(route('mahasiswa.timesheet.edit', $timesheet->id));
+    }
+
+    public function test_mahasiswa_can_view_timesheet_edit_form(): void
+    {
+        $timesheet = $this->createPendingTimesheet();
+
+        $response = $this->get('/mahasiswa/timesheet/'.$timesheet->id.'/edit');
+
+        $response->assertOk()
+            ->assertSee('Edit Data Jam Kerja Asistensi')
+            ->assertSee($timesheet->aktivitas);
+    }
+
+    public function test_mahasiswa_can_update_timesheet(): void
+    {
+        $timesheet = $this->createPendingTimesheet();
+
+        $response = $this->put('/mahasiswa/timesheet/'.$timesheet->id, [
+            'matakuliah' => $timesheet->mata_kuliah,
+            'tanggal' => now()->subDay()->toDateString(),
+            'jam' => '4.0',
+            'aktivitas' => 'Mendampingi Praktikum Revisi',
+            'deskripsi' => 'Uraian pekerjaan diperbaiki sesuai catatan dosen.',
+        ]);
+
+        $response->assertRedirect('/mahasiswa/timesheet/'.$timesheet->id);
+        $this->assertDatabaseHas('timesheet', [
+            'id' => $timesheet->id,
+            'jumlah_jam' => 4.0,
+            'aktivitas' => 'Mendampingi Praktikum Revisi',
+            'status_approval' => 'pending',
+        ]);
+    }
+
     private function createActiveLowongan(): Pengumuman
     {
         return Pengumuman::query()->create([

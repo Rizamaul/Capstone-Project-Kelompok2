@@ -12,7 +12,7 @@
         </a>
     </header>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-label="Ringkasan rekrutmen">
+    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Ringkasan rekrutmen">
         <article class="rounded-2xl border border-gray-200 bg-white p-5">
             <p class="text-sm font-semibold text-gray-500">Pengumuman aktif</p>
             <p class="mt-2 text-3xl font-bold text-gray-900">{{ $statistik['pengumuman_aktif'] }}</p>
@@ -20,10 +20,6 @@
         <article class="rounded-2xl border border-gray-200 bg-white p-5">
             <p class="text-sm font-semibold text-gray-500">Total pendaftar</p>
             <p class="mt-2 text-3xl font-bold text-gray-900">{{ $statistik['total_pendaftar'] }}</p>
-        </article>
-        <article class="rounded-2xl border border-gray-200 bg-white p-5">
-            <p class="text-sm font-semibold text-gray-500">Kuota terisi</p>
-            <p class="mt-2 text-3xl font-bold text-gray-900">{{ $statistik['kuota_terisi'] }}<span class="text-lg font-semibold text-gray-400"> / {{ $statistik['kuota_total'] }}</span></p>
         </article>
         <article class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
             <p class="text-sm font-semibold text-amber-800">Perlu review berkas</p>
