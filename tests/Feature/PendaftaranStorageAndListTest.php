@@ -206,6 +206,42 @@ class PendaftaranStorageAndListTest extends TestCase
             ->assertSee('Selamat, pendaftaran disetujui.');
     }
 
+    public function test_mahasiswa_can_view_edit_ringkasan_pendaftaran_page(): void
+    {
+        $pendaftaran = $this->createPendaftaran();
+
+        $response = $this->get('/mahasiswa/pendaftaran/'.$pendaftaran->id.'/edit');
+
+        $response->assertOk()
+            ->assertSee('Edit Ringkasan Pendaftaran')
+            ->assertSee($pendaftaran->nama)
+            ->assertSee($pendaftaran->nim);
+    }
+
+    public function test_mahasiswa_can_update_ringkasan_pendaftaran(): void
+    {
+        Storage::fake('public');
+        $pendaftaran = $this->createPendaftaran();
+
+        $response = $this->put('/mahasiswa/pendaftaran/'.$pendaftaran->id, [
+            'nama' => 'Riza Maulana Updated',
+            'nim' => $pendaftaran->nim,
+            'nilai_matkul' => 'A',
+            'ipk' => '3,85',
+            'motivasi' => 'Motivasi yang sudah diperbarui dengan sangat mendalam dan penuh komitmen tinggi.',
+            'portfolio' => 'https://github.com/rizamaulana',
+            'cv' => UploadedFile::fake()->create('cv_baru.pdf', 100, 'application/pdf'),
+        ]);
+
+        $response->assertRedirect('/mahasiswa/status/'.$pendaftaran->id);
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'nama' => 'Riza Maulana Updated',
+            'ipk' => 3.85,
+            'portfolio' => 'https://github.com/rizamaulana',
+        ]);
+    }
+
     private function createLowongan(array $attributes = []): Pengumuman
     {
         return Pengumuman::query()->create(array_merge([
@@ -257,8 +293,8 @@ class PendaftaranStorageAndListTest extends TestCase
             'ipk' => '3.70',
             'motivasi' => 'Saya sangat tertarik dan memiliki kemampuan yang dibutuhkan untuk membantu praktikum.',
             'portfolio' => 'https://example.com/portfolio',
-            'cv' => new UploadedFile(__DIR__.'/fixtures/sample.pdf', 'sample.pdf', 'application/pdf', null, true),
-            'transkrip' => new UploadedFile(__DIR__.'/fixtures/sample.pdf', 'sample.pdf', 'application/pdf', null, true),
+            'cv' => UploadedFile::fake()->create('sample.pdf', 100, 'application/pdf'),
+            'transkrip' => UploadedFile::fake()->create('sample.pdf', 100, 'application/pdf'),
             'persetujuan' => '1',
         ], $overrides);
     }

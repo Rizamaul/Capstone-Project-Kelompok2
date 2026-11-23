@@ -21,7 +21,9 @@
     @endif
 
     @forelse($pendaftarans as $pendaftaran)
-        <article class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+        <article class="mb-4 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-[#1E5EFF]/50 hover:shadow-md transition-all cursor-pointer"
+                 onclick="window.location.href='{{ route('dosen.pendaftar.show', $pendaftaran) }}'"
+                 title="Klik untuk melihat peninjauan dan pratinjau berkas pelamar">
             <div class="flex flex-col justify-between gap-5 lg:flex-row">
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
@@ -32,25 +34,13 @@
                     </div>
                     <p class="mt-1 text-sm text-gray-500">NIM {{ $pendaftaran->nim }} · {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan dihapus' }}</p>
                     <p class="mt-3 whitespace-pre-line text-sm text-gray-700">{{ $pendaftaran->motivasi }}</p>
-                    <div class="mt-3 flex flex-wrap gap-4 text-sm">
-                        <a href="{{ route('dosen.pendaftar.show', $pendaftaran) }}" class="font-bold text-[#1E5EFF] hover:underline">🔍 Peninjauan Berkas Lengkap</a>
-                        @if($pendaftaran->cv_path)
-                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) }}" target="_blank" rel="noopener" class="font-semibold text-blue-700 hover:underline">Lihat CV</a>
-                        @endif
-                        @if($pendaftaran->transkrip_path)
-                            <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) }}" target="_blank" rel="noopener" class="font-semibold text-blue-700 hover:underline">Lihat transkrip</a>
-                        @endif
-                        @if($pendaftaran->portfolio)
-                            <a href="{{ $pendaftaran->portfolio }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-blue-700 hover:underline">Portofolio</a>
-                        @endif
-                    </div>
                     @if($pendaftaran->catatan_dosen)
                         <p class="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700"><strong>Catatan:</strong> {{ $pendaftaran->catatan_dosen }}</p>
                     @endif
                 </div>
 
                 @if(! $pendaftaran->is_published)
-                    <form action="{{ route('dosen.pendaftar.status', $pendaftaran) }}" method="POST" class="w-full space-y-3 lg:max-w-sm">
+                    <form action="{{ route('dosen.pendaftar.status', $pendaftaran) }}" method="POST" class="w-full space-y-3 lg:max-w-sm" onclick="event.stopPropagation()">
                         @csrf
                         @method('PATCH')
                         <label class="block">

@@ -63,6 +63,29 @@ class TimesheetWorkflowTest extends TestCase
             ->assertSee('Belum ada timesheet.');
     }
 
+    public function test_mahasiswa_can_view_timesheet_detail(): void
+    {
+        $timesheet = Timesheet::query()->create([
+            'asisten_id' => 1,
+            'tanggal' => now()->subDay()->toDateString(),
+            'jumlah_jam' => 3.5,
+            'mata_kuliah' => 'IF101 · Algoritma & Struktur Data',
+            'aktivitas' => 'Mendampingi Praktikum',
+            'uraian_pekerjaan' => 'Membantu praktikan debug kode C++.',
+            'status_approval' => 'rejected',
+            'catatan_revisi' => 'Laporan belum ada lampiran log kegiatan.',
+        ]);
+
+        $response = $this->get('/mahasiswa/timesheet/'.$timesheet->id);
+
+        $response->assertOk()
+            ->assertSee('Detail Timesheet Asistensi Praktikum')
+            ->assertSee('Algoritma & Struktur Data')
+            ->assertSee('Membantu praktikan debug kode C++.')
+            ->assertSee('Keterangan Alasan Ditolak')
+            ->assertSee('Laporan belum ada lampiran log kegiatan.');
+    }
+
     public function test_dosen_timesheet_page_renders_persisted_entries(): void
     {
         $timesheet = $this->createPendingTimesheet();

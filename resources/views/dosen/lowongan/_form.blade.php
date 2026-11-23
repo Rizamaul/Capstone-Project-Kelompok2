@@ -57,7 +57,7 @@
 
     <label class="block">
         <span class="mb-2 block text-sm font-semibold text-gray-700">Minimal IPK</span>
-        <input type="number" name="syarat_ipk" min="0" max="4" step="0.01" value="{{ old('syarat_ipk', $lowongan['syarat_ipk'] ?? '') }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+        <input type="number" name="syarat_ipk" min="0.01" max="4" step="0.01" value="{{ old('syarat_ipk', $lowongan['syarat_ipk'] ?? '') }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
     </label>
 
     <label class="block sm:col-span-2">

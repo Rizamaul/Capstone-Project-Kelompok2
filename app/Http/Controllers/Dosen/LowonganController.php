@@ -72,7 +72,16 @@ class LowonganController extends Controller
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate($this->rules());
+        if ($request->has('syarat_ipk') && is_string($request->input('syarat_ipk'))) {
+            $request->merge([
+                'syarat_ipk' => str_replace(',', '.', trim($request->input('syarat_ipk'))),
+            ]);
+        }
+
+        $validated = $request->validate($this->rules(), [
+            'syarat_ipk.gt' => 'Minimal IPK tidak boleh bernilai 0 atau minus.',
+            'syarat_ipk.max' => 'Minimal IPK tidak boleh lebih dari 4.00.',
+        ]);
 
         $lowongan = Pengumuman::create($this->attributes($validated) + [
             'dosen_id' => auth()->id() ?? 1,
@@ -92,7 +101,17 @@ class LowonganController extends Controller
     public function update(Request $request, int $id): JsonResponse|RedirectResponse
     {
         $lowongan = Pengumuman::findOrFail($id);
-        $validated = $request->validate($this->rules(partial: true));
+
+        if ($request->has('syarat_ipk') && is_string($request->input('syarat_ipk'))) {
+            $request->merge([
+                'syarat_ipk' => str_replace(',', '.', trim($request->input('syarat_ipk'))),
+            ]);
+        }
+
+        $validated = $request->validate($this->rules(partial: true), [
+            'syarat_ipk.gt' => 'Minimal IPK tidak boleh bernilai 0 atau minus.',
+            'syarat_ipk.max' => 'Minimal IPK tidak boleh lebih dari 4.00.',
+        ]);
 
         $lowongan->update($this->attributes($validated));
         $data = $this->present($lowongan->refresh());
@@ -158,21 +177,25 @@ class LowonganController extends Controller
     private function rules(bool $partial = false): array
     {
         $required = $partial ? ['sometimes', 'required'] : ['required'];
-        $statusRequired = $partial ? ['sometimes', 'required'] : ['required'];
+        $statusRequired = $partial ? ['sometimes', 'required'] : ['sometimes'];
 
         return [
             'nama' => [...$required, 'string', 'max:255'],
             'kode' => [...$required, 'string', 'max:20'],
-            'sks' => [...$required, 'integer', 'min:1', 'max:6'],
+            'sks' => ['nullable', 'integer', 'min:1', 'max:6'],
             'kelas' => ['nullable', 'string', 'max:50'],
             'semester' => ['nullable', 'string', 'max:60'],
             'kuota' => [...$required, 'integer', 'min:1'],
-            'jadwal' => [...$required, 'string', 'max:100'],
+            'jadwal' => ['nullable', 'string', 'max:100'],
+            'jadwal_hari' => ['nullable', 'string', 'max:50'],
+            'jadwal_jam' => ['nullable', 'string', 'max:50'],
             'tenggat' => [...$required, 'date'],
             'syarat_nilai' => ['nullable', 'string', 'max:10'],
-            'syarat_ipk' => ['nullable', 'numeric', 'min:0', 'max:4'],
-            'syarat' => [...$required, 'string', 'max:2000'],
-            'deskripsi' => [...$required, 'string', 'max:2000'],
+            'syarat_ipk' => ['nullable', 'numeric', 'gt:0', 'max:4'],
+            'syarat' => ['nullable', 'string', 'max:2000'],
+            'syarat_tambahan' => ['sometimes', 'array'],
+            'manfaat' => ['sometimes', 'array'],
+            'deskripsi' => ['nullable', 'string', 'max:2000'],
             'berkas_diminta' => ['sometimes', 'array'],
             'berkas_diminta.*' => ['string', 'max:100'],
             'berkas_diminta_present' => ['sometimes', 'accepted'],
@@ -216,8 +239,36 @@ class LowonganController extends Controller
             $attributes['berkas_diminta'] = json_encode([], JSON_THROW_ON_ERROR);
         }
 
+        if ((empty($attributes['jadwal']) || $attributes['jadwal'] === 'Senin 08.00 - 10.00 WIB') && (! empty($validated['jadwal_hari']) || ! empty($validated['jadwal_jam']))) {
+            $attributes['jadwal'] = trim(($validated['jadwal_hari'] ?? '') . ' ' . ($validated['jadwal_jam'] ?? ''));
+        }
+
+        if (! empty($validated['syarat_tambahan']) && empty($attributes['syarat'])) {
+            $attributes['syarat'] = implode("\n", array_filter($validated['syarat_tambahan']));
+        }
+        if (empty($attributes['syarat'])) {
+            $attributes['syarat'] = 'Wajib memenuhi seluruh kriteria akademik dan ketentuan praktikum.';
+        }
+
+        if (! empty($validated['manfaat']) && empty($attributes['deskripsi'])) {
+            $attributes['deskripsi'] = implode("\n", array_filter($validated['manfaat']));
+        }
+        if (empty($attributes['deskripsi'])) {
+            $attributes['deskripsi'] = 'Mendampingi sesi praktikum di laboratorium dan membimbing mahasiswa.';
+        }
+
+        if (! array_key_exists('sks', $attributes) || empty($attributes['sks'])) {
+            $attributes['sks'] = 3;
+        }
+
+        if (! array_key_exists('jadwal', $attributes) || empty($attributes['jadwal'])) {
+            $attributes['jadwal'] = 'Senin 08.00 - 10.00 WIB';
+        }
+
         if (array_key_exists('status', $validated)) {
             $attributes['status_aktif'] = $validated['status'] === 'aktif';
+        } else {
+            $attributes['status_aktif'] = true;
         }
 
         return $attributes;

@@ -1,124 +1,107 @@
 @extends('layouts.mahasiswa')
-@section('title','Status Pendaftaran')
+@section('title', 'Status Pendaftaran')
+
 @section('content')
+<div class="space-y-6">
 
-@if(session('success'))
-    <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800" role="status">
-        {{ session('success') }}
-    </div>
-@endif
-
-<div class="mb-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-    <div>
-        <p class="text-xs font-bold tracking-[.18em] text-[#2058B2]">PANTAU PROGRES</p>
-        <h1 class="mt-2 text-2xl font-extrabold sm:text-3xl">Status Pendaftaran</h1>
-        <p class="mt-2 text-sm text-slate-500">Setiap perubahan status ditampilkan agar kamu tahu langkah berikutnya.</p>
-    </div>
-    <a href="{{ route('mahasiswa.lowongan.index') }}" class="text-sm font-bold text-[#2058B2]">← Lihat pengumuman</a>
-</div>
-
-@if(! $pendaftaran)
-    <section class="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center">
-        <h2 class="text-lg font-extrabold">Belum ada pendaftaran</h2>
-        <p class="mt-2 text-sm text-slate-500">Pilih lowongan yang tersedia untuk mengirim formulir pendaftaran.</p>
-        <a href="{{ route('mahasiswa.lowongan.index') }}" class="mt-5 inline-flex rounded-xl bg-[#2058B2] px-5 py-3 text-sm font-bold text-white hover:bg-blue-800">
-            Lihat lowongan
-        </a>
-    </section>
-@else
-<div class="grid gap-6 xl:grid-cols-[1fr_340px]">
-
-    {{-- Jejak status --}}
-    <section class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
-        <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
-                <span class="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-bold text-[#2058B2]">
-                    {{ $pendaftaran['kode'] }} · {{ $pendaftaran['sks'] }} SKS
-                </span>
-                <h2 class="mt-3 text-xl font-extrabold">{{ $pendaftaran['matkul'] }}</h2>
-                <p class="mt-1 text-sm text-slate-500">Didaftarkan {{ $pendaftaran['didaftarkan_pada'] }}</p>
-            </div>
-            <span class="rounded-full px-3 py-1.5 text-xs font-bold {{ str_contains(strtolower($pendaftaran['status_terkini']), 'ditolak') ? 'bg-red-50 text-red-700' : ($pendaftaran['status_terkini'] === 'Pendaftaran disetujui' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700') }}">
-                {{ $pendaftaran['status_terkini'] }}
-            </span>
+    <!-- HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+            <p class="text-[11px] font-bold text-[#1E5EFF] tracking-wider uppercase">PANTAU PROGRES</p>
+            <h1 class="text-2xl font-extrabold text-gray-900 mt-1">Status Pendaftaran</h1>
+            <p class="text-xs text-gray-500 mt-1">Setiap perubahan status ditampilkan agar kamu tahu langkah berikutnya.</p>
         </div>
+        <div>
+            <a href="{{ route('mahasiswa.lowongan.index') }}" class="text-xs font-semibold text-gray-500 hover:text-[#1E5EFF] transition-colors">
+                ← Lihat Pengumuman
+            </a>
+        </div>
+    </div>
 
-        <div class="my-7 border-t border-slate-100"></div>
-        @if($pendaftaran['catatan_dosen'])
-            <div class="mb-6 rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-                <h3 class="font-bold">Catatan dosen</h3>
-                <p class="mt-1 whitespace-pre-line">{{ $pendaftaran['catatan_dosen'] }}</p>
-            </div>
-        @endif
+    <!-- DAFTAR KARTU STATUS PENDAFTARAN -->
+    <div class="space-y-4">
+        @forelse($pendaftarans as $pendaftaran)
+            @php
+                $statusColor = match($pendaftaran->status) {
+                    'disetujui' => 'bg-emerald-50 text-emerald-700',
+                    'ditolak' => 'bg-red-50 text-red-700',
+                    default => 'bg-amber-50 text-amber-700',
+                };
+                $statusLabel = match($pendaftaran->status) {
+                    'disetujui' => 'Disetujui',
+                    'ditolak' => 'Ditolak',
+                    default => 'Menunggu',
+                };
+                $statusSubtitle = match($pendaftaran->status) {
+                    'disetujui' => 'Pendaftaran disetujui',
+                    'ditolak' => 'Pendaftaran ditolak',
+                    default => 'Menunggu keputusan dosen',
+                };
+            @endphp
 
-        <h3 class="font-extrabold">Jejak Status</h3>
-        <p class="mt-1 text-sm text-slate-500">Riwayat perubahan status pendaftaran.</p>
+            <article class="bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="flex-1">
+                        <!-- Badges -->
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="px-2.5 py-1 rounded-lg bg-[#EDF5FF] text-[#1E5EFF] font-bold text-[11px]">
+                                {{ $pendaftaran->lowongan?->kode ?? 'IF101' }} · {{ $pendaftaran->lowongan?->sks ?? 3 }} SKS
+                            </span>
+                            <span class="px-3 py-1 rounded-full font-bold text-[11px] flex items-center gap-1.5 {{ $statusColor }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $pendaftaran->status === 'disetujui' ? 'bg-emerald-500' : ($pendaftaran->status === 'ditolak' ? 'bg-red-500' : 'bg-amber-500') }}"></span>
+                                <span>{{ $statusLabel }}</span>
+                            </span>
+                            <span class="text-[11px] text-gray-400 font-medium">({{ $statusSubtitle }})</span>
+                        </div>
 
-        <ol class="mt-6 space-y-0">
-            @foreach($langkah as $step)
-            <li class="relative flex gap-4 pb-8 last:pb-0">
-                <div class="relative flex flex-col items-center">
-                    <span class="z-10 flex h-8 w-8 items-center justify-center rounded-full
-                        {{ $step['selesai'] ? 'bg-emerald-100 text-emerald-700' : 'border-2 border-slate-200 bg-white text-slate-400' }}">
-                        {{ $step['selesai'] ? '✓' : '·' }}
-                    </span>
-                    @if(!$loop->last)
-                        <span class="absolute top-8 h-full w-px bg-slate-200"></span>
-                    @endif
-                </div>
-                <div class="flex-1">
-                    <div class="flex flex-col justify-between gap-1 sm:flex-row">
-                        <h4 class="text-sm font-bold {{ $step['selesai'] ? 'text-slate-900' : 'text-slate-500' }}">
-                            {{ $step['judul'] }}
-                        </h4>
-                        <span class="text-xs text-slate-400">{{ $step['waktu'] }}</span>
+                        <!-- Title & Submission Date -->
+                        <h2 class="text-lg font-bold text-gray-900">{{ $pendaftaran->lowongan?->mata_kuliah ?? 'Algoritma Struktur Data' }}</h2>
+                        <p class="text-xs text-gray-400 mt-1">Didaftarkan Terakhir {{ $pendaftaran->created_at?->translatedFormat('d M Y, H:i') ?? '22 Okt 2026, 08:18' }}</p>
+
+                        <!-- Academic & Documents Info Box -->
+                        <div class="grid grid-cols-3 gap-4 bg-gray-50/80 rounded-xl p-4 border border-gray-100 mt-4 max-w-lg text-xs">
+                            <div>
+                                <p class="text-gray-400 text-[10px]">Nilai</p>
+                                <p class="font-bold text-gray-800 mt-1">{{ $pendaftaran->nilai_matkul ?: 'A-' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-[10px]">Dokumen CV</p>
+                                <p class="font-bold text-gray-800 mt-1 truncate">{{ $pendaftaran->cv_path ? basename($pendaftaran->cv_path) : 'CV1.pdf' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-[10px]">Transkip</p>
+                                <p class="font-bold text-gray-800 mt-1 truncate">{{ $pendaftaran->transkrip_path ? basename($pendaftaran->transkrip_path) : 'Transkip1.pdf' }}</p>
+                            </div>
+                        </div>
+
+                        @if($pendaftaran->is_published && $pendaftaran->catatan_dosen)
+                            <div class="mt-3 p-3 bg-blue-50/60 rounded-xl border border-blue-100 text-xs text-blue-900 max-w-lg">
+                                <span class="font-bold">Catatan dosen:</span> {{ $pendaftaran->catatan_dosen }}
+                            </div>
+                        @endif
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-slate-500">{{ $step['deskripsi'] }}</p>
-                </div>
-            </li>
-            @endforeach
-        </ol>
-    </section>
 
-    {{-- Ringkasan sidebar --}}
-    <aside class="space-y-5">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6">
-            <h3 class="font-extrabold">Ringkasan Pendaftaran</h3>
-            <dl class="mt-4 space-y-4 text-sm">
-                @foreach([
-                    ['Nama',             $pendaftaran['nama']],
-                    ['NIM',              $pendaftaran['nim']],
-                    ['Nilai mata kuliah',$pendaftaran['nilai_matkul']],
-                    ['Dokumen CV',       $pendaftaran['cv']],
-                    ['Transkrip',        $pendaftaran['transkrip']],
-                ] as $row)
-                <div class="flex justify-between gap-3 border-b border-slate-100 pb-3">
-                    <dt class="text-slate-500">{{ $row[0] }}</dt>
-                    <dd class="text-right font-semibold">{{ $row[1] }}</dd>
+                    <!-- Action Button -->
+                    <div class="lg:self-center shrink-0">
+                        <a href="{{ route('mahasiswa.status.show', $pendaftaran->id) }}" 
+                           class="px-6 py-2.5 bg-[#1E5EFF] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center gap-1.5">
+                            <span>Lihat Detail</span>
+                            <span>→</span>
+                        </a>
+                    </div>
                 </div>
-                @endforeach
-            </dl>
-        </div>
-
-        @if($pendaftaran['status_terkini'] === 'Menunggu keputusan dosen')
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                <h3 class="font-extrabold text-amber-900">Harap tunggu keputusan dosen</h3>
-                <p class="mt-2 text-sm leading-6 text-amber-800">Hasil akhir belum diumumkan. Periksa halaman ini secara berkala untuk melihat perubahan status.</p>
+            </article>
+        @empty
+            <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center">
+                <p class="text-base font-bold text-gray-800">Belum ada riwayat pendaftaran</p>
+                <p class="text-xs text-gray-400 mt-1">Anda belum melamar lowongan asisten praktikum pada periode ini.</p>
+                <a href="{{ route('mahasiswa.lowongan.index') }}" 
+                   class="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#1E5EFF] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-xs">
+                    Jelajahi Lowongan →
+                </a>
             </div>
-        @elseif($pendaftaran['status_terkini'] === 'Pendaftaran disetujui')
-            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                <h3 class="font-extrabold text-emerald-900">Pendaftaran disetujui</h3>
-                <p class="mt-2 text-sm leading-6 text-emerald-800">Dosen telah mengumumkan hasil seleksi. Lihat catatan di atas untuk informasi lanjutan.</p>
-            </div>
-        @else
-            <div class="rounded-2xl border border-red-200 bg-red-50 p-5">
-                <h3 class="font-extrabold text-red-900">Pendaftaran belum berhasil</h3>
-                <p class="mt-2 text-sm leading-6 text-red-800">Dosen telah mengumumkan hasil seleksi. Lihat catatan di atas untuk informasi lanjutan.</p>
-            </div>
-        @endif
-    </aside>
+        @endforelse
+    </div>
 
 </div>
-@endif
-
 @endsection

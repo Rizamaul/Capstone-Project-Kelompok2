@@ -173,21 +173,6 @@
                     <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 text-center text-xs text-gray-500">
                         Tidak ada berkas PDF yang terlampir.
                     </div>
-                @else
-                    <!-- Inline Preview Box -->
-                    <div class="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex flex-col mt-4">
-                        <div class="px-3 py-2 bg-gray-100 border-b border-gray-200 flex items-center justify-between text-xs font-semibold text-gray-700">
-                            <span>Pratinjau Berkas Aktif</span>
-                            <button type="button" @click="openPreview(activePdfTitle, activePdfUrl)" class="text-[#1E5EFF] hover:underline flex items-center gap-1 text-[11px] font-bold cursor-pointer">
-                                Perbesar Modal ↗
-                            </button>
-                        </div>
-                        <div class="h-64 w-full bg-slate-100 relative">
-                            <template x-if="activePdfUrl">
-                                <iframe :src="activePdfUrl" class="w-full h-full border-0"></iframe>
-                            </template>
-                        </div>
-                    </div>
                 @endif
             </div>
         </div>

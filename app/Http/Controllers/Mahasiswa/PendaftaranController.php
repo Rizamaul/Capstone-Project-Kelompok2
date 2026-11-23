@@ -173,6 +173,93 @@ class PendaftaranController extends Controller
             ->with('success', 'Pendaftaran berhasil dikirim. Pantau statusnya di halaman ini.');
     }
 
+    public function edit(int $id): View
+    {
+        $pendaftaran = Pendaftaran::with('lowongan')->findOrFail($id);
+        $lowongan = $pendaftaran->lowongan;
+
+        return view('mahasiswa.edit-pendaftaran', [
+            'pendaftaran' => $pendaftaran,
+            'lowongan' => [
+                'id' => $lowongan?->id,
+                'nama' => $lowongan?->mata_kuliah ?? 'Mata Kuliah',
+                'kode' => $lowongan?->kode ?? 'IF101',
+                'sks' => $lowongan?->sks ?? 3,
+                'syarat_nilai' => $lowongan?->syarat_nilai,
+                'syarat_ipk' => $lowongan?->syarat_ipk,
+                'nilai_options' => $lowongan ? $this->allowedGrades($lowongan) : ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C'],
+                'berkas_diminta' => $lowongan ? $this->documents($lowongan) : ['CV', 'Transkrip nilai'],
+            ],
+        ]);
+    }
+
+    public function update(Request $request, int $id): RedirectResponse
+    {
+        $pendaftaran = Pendaftaran::with('lowongan')->findOrFail($id);
+        $lowongan = $pendaftaran->lowongan;
+
+        $allowedGrades = $lowongan ? $this->allowedGrades($lowongan) : ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C'];
+        $minIpk = $lowongan?->syarat_ipk;
+        $ipkRules = $minIpk === null
+            ? ['nullable', 'numeric', 'gt:0', 'max:4']
+            : ['required', 'numeric', 'min:'.$minIpk, 'max:4'];
+
+        if ($request->has('ipk') && is_string($request->input('ipk'))) {
+            $request->merge([
+                'ipk' => str_replace(',', '.', trim($request->input('ipk'))),
+            ]);
+        }
+
+        $validated = $request->validate([
+            'nama' => ['required', 'string', 'max:255'],
+            'nim' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('pendaftaran', 'nim')
+                    ->where(fn (QueryBuilder $query): QueryBuilder => $query->where('lowongan_id', $pendaftaran->lowongan_id))
+                    ->ignore($pendaftaran->id),
+            ],
+            'nilai_matkul' => ['required', Rule::in($allowedGrades)],
+            'ipk' => $ipkRules,
+            'motivasi' => ['required', 'string', 'min:50', 'max:1500'],
+            'portfolio' => ['nullable', 'url', 'max:255'],
+            'cv' => ['nullable', 'file', 'mimes:pdf', 'max:2048'],
+            'transkrip' => ['nullable', 'file', 'mimes:pdf', 'max:2048'],
+        ]);
+
+        $updateData = [
+            'nama' => $validated['nama'],
+            'nim' => $validated['nim'],
+            'nilai_matkul' => $validated['nilai_matkul'],
+            'ipk' => $validated['ipk'],
+            'motivasi' => $validated['motivasi'],
+            'portfolio' => $validated['portfolio'] ?? null,
+        ];
+
+        $directory = 'pendaftaran/'.now()->format('Y/m');
+        $name = Str::slug($validated['nama']);
+
+        if ($request->hasFile('cv')) {
+            $cvPath = $request->file('cv')->storeAs($directory, $name.'-cv-'.Str::uuid().'.pdf', 'public');
+            if ($cvPath) {
+                $updateData['cv_path'] = $cvPath;
+            }
+        }
+
+        if ($request->hasFile('transkrip')) {
+            $transkripPath = $request->file('transkrip')->storeAs($directory, $name.'-transkrip-'.Str::uuid().'.pdf', 'public');
+            if ($transkripPath) {
+                $updateData['transkrip_path'] = $transkripPath;
+            }
+        }
+
+        $pendaftaran->update($updateData);
+
+        return redirect()->route('mahasiswa.status.show', $pendaftaran->id)
+            ->with('success', 'Ringkasan pendaftaran berhasil diperbarui.');
+    }
+
     private function isOpen(Pengumuman $lowongan): bool
     {
         $accepted = $lowongan->pendaftarans()

@@ -54,14 +54,32 @@ Route::prefix('mahasiswa')->name('mahasiswa.')->group(function () {
     Route::post('/pendaftaran', [MahasiswaPendaftaran::class, 'store'])
         ->name('pendaftaran.store');
 
+    Route::get('/pendaftaran/{id}/edit', [MahasiswaPendaftaran::class, 'edit'])
+        ->name('pendaftaran.edit');
+
+    Route::put('/pendaftaran/{id}', [MahasiswaPendaftaran::class, 'update'])
+        ->name('pendaftaran.update');
+
     Route::get('/status', [MahasiswaStatus::class, 'index'])
         ->name('status');
+
+    Route::get('/status/{id}', [MahasiswaStatus::class, 'show'])
+        ->name('status.show');
+
+    Route::get('/status/{id}/edit', [MahasiswaPendaftaran::class, 'edit'])
+        ->name('status.edit');
+
+    Route::put('/status/{id}', [MahasiswaPendaftaran::class, 'update'])
+        ->name('status.update');
 
     Route::get('/pendaftar', [MahasiswaPendaftaran::class, 'index'])
         ->name('pendaftar.index');
 
     Route::get('/timesheet', [MahasiswaTimesheet::class, 'index'])
         ->name('timesheet');
+
+    Route::get('/timesheet/{timesheet}', [MahasiswaTimesheet::class, 'show'])
+        ->name('timesheet.show');
 
     Route::post('/timesheet', [MahasiswaTimesheet::class, 'store'])
         ->name('timesheet.store');
