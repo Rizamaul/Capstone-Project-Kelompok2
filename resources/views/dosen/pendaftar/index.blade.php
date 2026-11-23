@@ -33,6 +33,7 @@
                     <p class="mt-1 text-sm text-gray-500">NIM {{ $pendaftaran->nim }} · {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan dihapus' }}</p>
                     <p class="mt-3 whitespace-pre-line text-sm text-gray-700">{{ $pendaftaran->motivasi }}</p>
                     <div class="mt-3 flex flex-wrap gap-4 text-sm">
+                        <a href="{{ route('dosen.pendaftar.show', $pendaftaran) }}" class="font-bold text-[#1E5EFF] hover:underline">🔍 Peninjauan Berkas Lengkap</a>
                         @if($pendaftaran->cv_path)
                             <a href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) }}" target="_blank" rel="noopener" class="font-semibold text-blue-700 hover:underline">Lihat CV</a>
                         @endif

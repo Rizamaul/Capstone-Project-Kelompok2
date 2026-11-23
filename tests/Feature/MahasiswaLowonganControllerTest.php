@@ -40,6 +40,30 @@ class MahasiswaLowonganControllerTest extends TestCase
         $response->assertNotFound();
     }
 
+    public function test_lowongan_can_be_filtered_by_keyword_query(): void
+    {
+        $match = $this->createLowongan(['mata_kuliah' => 'Basis Data Lanjut', 'kode' => 'BD202']);
+        $other = $this->createLowongan(['mata_kuliah' => 'Kecerdasan Buatan', 'kode' => 'AI301']);
+
+        $response = $this->get('/mahasiswa/lowongan?q=Basis');
+
+        $response->assertOk()
+            ->assertSee($match->mata_kuliah)
+            ->assertDontSee($other->mata_kuliah);
+    }
+
+    public function test_lowongan_can_be_filtered_by_status_query(): void
+    {
+        $open = $this->createLowongan(['mata_kuliah' => 'Sistem Operasi', 'status_aktif' => true]);
+        $closed = $this->createLowongan(['mata_kuliah' => 'Jaringan Komputer', 'status_aktif' => false]);
+
+        $response = $this->get('/mahasiswa/lowongan?status=Dibuka');
+
+        $response->assertOk()
+            ->assertSee($open->mata_kuliah)
+            ->assertDontSee($closed->mata_kuliah);
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      */

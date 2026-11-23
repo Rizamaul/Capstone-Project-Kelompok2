@@ -5,9 +5,9 @@
 <div class="space-y-5"
      x-data="{
         lowongans: {{ Js::from($lowongans) }},
-        q: '',
-        status: 'Semua',
-        sort: 'Tenggat terdekat',
+        q: @js(request('q', '')),
+        status: @js(request('status', 'Semua')),
+        sort: @js(request('sort', 'Tenggat terdekat')),
         detailUrl: @js(route('mahasiswa.lowongan.show', ['id' => '__ID__'])),
         get filteredLowongans() {
             return this.lowongans
@@ -36,29 +36,39 @@
         <p class="mt-2 text-sm text-slate-500">Temukan mata kuliah yang sesuai dengan minat dan kemampuanmu.</p>
     </header>
 
-    <section class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_190px_190px]">
+    <form method="GET" action="{{ route('mahasiswa.lowongan.index') }}" class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_170px_170px_auto]">
         <label class="relative block">
             <span class="sr-only">Cari mata kuliah atau kode</span>
             <span class="absolute left-4 top-3 text-slate-400" aria-hidden="true">⌕</span>
-            <input x-model="q" type="search" placeholder="Cari mata kuliah atau kode..." class="w-full rounded-xl border-slate-200 py-3 pl-10 text-sm focus:border-blue-500 focus:ring-blue-500">
+            <input name="q" x-model="q" type="search" placeholder="Cari mata kuliah atau kode..." value="{{ request('q') }}" class="w-full rounded-xl border-slate-200 py-3 pl-10 text-sm focus:border-blue-500 focus:ring-blue-500">
         </label>
         <label>
             <span class="sr-only">Filter status</span>
-            <select x-model="status" class="w-full rounded-xl border-slate-200 py-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                <option>Semua</option>
-                <option>Dibuka</option>
-                <option>Ditutup</option>
+            <select name="status" x-model="status" class="w-full rounded-xl border-slate-200 py-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="Semua" @selected(request('status') === 'Semua')>Semua</option>
+                <option value="Dibuka" @selected(request('status') === 'Dibuka')>Dibuka</option>
+                <option value="Ditutup" @selected(request('status') === 'Ditutup')>Ditutup</option>
             </select>
         </label>
         <label>
             <span class="sr-only">Urutkan lowongan</span>
-            <select x-model="sort" class="w-full rounded-xl border-slate-200 py-3 text-sm focus:border-blue-500 focus:ring-blue-500">
-                <option>Tenggat terdekat</option>
-                <option>Nama A-Z</option>
-                <option>Kuota terbanyak</option>
+            <select name="sort" x-model="sort" class="w-full rounded-xl border-slate-200 py-3 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="Tenggat terdekat" @selected(request('sort') === 'Tenggat terdekat')>Tenggat terdekat</option>
+                <option value="Nama A-Z" @selected(request('sort') === 'Nama A-Z')>Nama A-Z</option>
+                <option value="Kuota terbanyak" @selected(request('sort') === 'Kuota terbanyak')>Kuota terbanyak</option>
             </select>
         </label>
-    </section>
+        <div class="flex items-center gap-2">
+            <button type="submit" class="w-full md:w-auto px-5 py-3 rounded-xl bg-[#2058B2] hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer">
+                Filter
+            </button>
+            @if(request('q') || (request('status') && request('status') !== 'Semua'))
+                <a href="{{ route('mahasiswa.lowongan.index') }}" class="px-3 py-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-semibold" title="Reset filter">
+                    ✕
+                </a>
+            @endif
+        </div>
+    </form>
 
     <div class="flex items-center justify-between gap-3">
         <p class="text-sm text-slate-500">
