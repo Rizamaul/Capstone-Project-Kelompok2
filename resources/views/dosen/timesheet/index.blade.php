@@ -1,7 +1,17 @@
 @extends('layouts.dosen')
 
 @section('content')
-<div class="py-2 px-2 sm:px-4 max-w-[1400px] mx-auto space-y-6">
+<div class="py-2 px-2 sm:px-4 max-w-[1400px] mx-auto space-y-6"
+     x-data="{
+         showRejectModal: false,
+         rejectUrl: '',
+         rejectName: '',
+         openRejectModal(url, name) {
+             this.rejectUrl = url;
+             this.rejectName = name;
+             this.showRejectModal = true;
+         }
+     }">
 
     <span class="sr-only">Review Timesheet</span>
 
@@ -82,7 +92,7 @@
             <div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-baseline gap-1.5">
-                        <h3 class="text-3xl font-bold text-gray-900">{{ number_format($statistik['total_jam'], 0) }}</h3>
+                        <h3 class="text-3xl font-bold text-gray-900" x-text="periode === 'minggu' ? '{{ number_format($statistik['jam_mingguan'] ?? $statistik['total_jam'], 1, ',', '.') }}' : '{{ number_format($statistik['jam_bulanan'] ?? $statistik['total_jam'], 1, ',', '.') }}'">{{ number_format($statistik['total_jam'], 1, ',', '.') }}</h3>
                         <span class="text-xs text-gray-400 font-normal">Jam</span>
                     </div>
                     <!-- Toggle Pill Minggu / Bulan -->
@@ -95,7 +105,7 @@
                         </button>
                     </div>
                 </div>
-                <p class="text-xs text-[#1E5EFF] font-medium mt-3">Perminggu : 10j | Bulan : 40j</p>
+                <p class="text-xs text-[#1E5EFF] font-medium mt-3">Total disetujui: {{ number_format($statistik['total_jam'], 1, ',', '.') }} jam</p>
             </div>
         </div>
 
@@ -147,10 +157,10 @@
 
             <!-- Filter Semester -->
             <div class="relative">
-                <select class="appearance-none pl-4 pr-9 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] focus:outline-none cursor-pointer">
-                    <option>Semua Semester</option>
-                    <option>Semester Ganjil 2026</option>
-                    <option>Semester Genap 2025</option>
+                <select name="semester" onchange="this.form.submit()" class="appearance-none pl-4 pr-9 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] focus:outline-none cursor-pointer">
+                    <option value="">Semua Semester</option>
+                    <option value="Ganjil 2026" @selected(($filters['semester'] ?? '') === 'Ganjil 2026')>Semester Ganjil 2026</option>
+                    <option value="Genap 2025" @selected(($filters['semester'] ?? '') === 'Genap 2025')>Semester Genap 2025</option>
                 </select>
                 <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#1E5EFF]">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
@@ -159,11 +169,11 @@
 
             <!-- Filter Matakuliah -->
             <div class="relative">
-                <select class="appearance-none pl-4 pr-9 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] focus:outline-none cursor-pointer">
-                    <option>Semua Matakuliah</option>
-                    <option>Algoritma & Struktur Data</option>
-                    <option>Pemrograman Dasar</option>
-                    <option>Jaringan Komputer</option>
+                <select name="matakuliah" onchange="this.form.submit()" class="appearance-none pl-4 pr-9 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] focus:outline-none cursor-pointer">
+                    <option value="">Semua Matakuliah</option>
+                    @foreach($matakuliahOptions ?? [] as $mk)
+                        <option value="{{ $mk }}" @selected(($filters['matakuliah'] ?? '') === $mk)>{{ $mk }}</option>
+                    @endforeach
                 </select>
                 <span class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[#1E5EFF]">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path></svg>
@@ -171,10 +181,10 @@
             </div>
 
             <!-- Tombol Eksport PDF -->
-            <button type="button" onclick="alert('Fitur ekspor PDF laporan sedang disiapkan.')" class="px-4 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] hover:bg-blue-100 transition-colors flex items-center gap-2 cursor-pointer">
+            <a href="{{ route('dosen.timesheet.export-pdf', request()->query()) }}" class="px-4 py-2.5 bg-[#EFF5FF] border border-blue-200/60 rounded-xl text-xs font-semibold text-[#1E5EFF] hover:bg-blue-100 transition-colors flex items-center gap-2 cursor-pointer">
                 <span class="text-red-500 font-bold">📄</span>
                 Eksport PDF
-            </button>
+            </a>
 
             <!-- Tombol Refresh -->
             <a href="{{ route('dosen.timesheet') }}" title="Refresh Data" class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center">
@@ -228,11 +238,17 @@
                                 </td>
 
                                 <!-- Kode & Mata Kuliah -->
+                                @php
+                                    $courseMeta = $courseMetaMap[$entry->mata_kuliah ?? ''] ?? null;
+                                @endphp
                                 <td class="py-4 px-6">
                                     <p class="font-bold text-gray-900 text-sm">{{ $entry->mata_kuliah ?? 'Algoritma & Struktur Data' }}</p>
                                     <div class="flex items-center gap-1.5 mt-1">
-                                        <span class="px-2 py-0.5 bg-[#DCEBFF] text-[#1E5EFF] rounded text-[10px] font-bold">IK2402</span>
-                                        <span class="text-[11px] text-gray-400">Kelas 2402 | 3 SKS</span>
+                                        @if(!empty($courseMeta['kelas']))
+                                            <span class="text-[11px] text-gray-500 font-medium">Kelas {{ $courseMeta['kelas'] }}</span>
+                                            <span class="text-[11px] text-gray-300">|</span>
+                                        @endif
+                                        <span class="text-[11px] text-gray-400">{{ $courseMeta['sks'] ?? 3 }} SKS</span>
                                     </div>
                                 </td>
 
@@ -277,9 +293,12 @@
                                     <div class="flex items-center justify-center gap-2">
                                         @if($entry->status_approval === 'pending')
                                             <!-- Tombol Tolak / Revisi -->
-                                            <a href="{{ route('dosen.timesheet.show', $entry) }}" title="Tolak & Berikan Catatan Revisi" class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center font-bold text-sm transition-colors shadow-2xs">
+                                            <button type="button"
+                                                    @click.stop="openRejectModal('{{ route('dosen.timesheet.status', $entry) }}', '{{ addslashes($entry->asisten?->name ?? 'Mahasiswa #' . $entry->asisten_id) }}')"
+                                                    title="Tolak & Berikan Catatan Revisi"
+                                                    class="w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center font-bold text-sm transition-colors shadow-2xs cursor-pointer">
                                                 ✕
-                                            </a>
+                                            </button>
 
                                             <!-- Tombol Setujui -->
                                             <form action="{{ route('dosen.timesheet.status', $entry) }}" method="POST" class="inline">
@@ -339,6 +358,40 @@
 
         </div>
 
+    </div>
+
+    <!-- MODAL TOLAK TIMESHEET -->
+    <div x-show="showRejectModal"
+         x-transition
+         x-cloak
+         @keydown.escape.window="showRejectModal = false"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4" @click.away="showRejectModal = false">
+            <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div>
+                    <h3 class="font-bold text-gray-900 text-sm">Berikan Alasan Penolakan</h3>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Asisten: <span class="font-semibold text-gray-700" x-text="rejectName"></span></p>
+                </div>
+                <button type="button" @click="showRejectModal = false" class="text-gray-400 hover:text-gray-600 font-bold cursor-pointer">✕</button>
+            </div>
+
+            <form :action="rejectUrl" method="POST" class="space-y-4">
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="status" value="rejected">
+
+                <textarea name="catatan_revisi" required rows="4" placeholder="Masukkan alasan penolakan untuk asisten praktikum..." class="w-full rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-800 focus:outline-none focus:border-red-500"></textarea>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="showRejectModal = false" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-xl text-xs font-semibold hover:bg-gray-50 cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-red-600 text-white rounded-xl text-xs font-semibold hover:bg-red-700 cursor-pointer">
+                        Kirim Penolakan
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
 </div>

@@ -18,6 +18,7 @@ class Pengumuman extends Model
         'kelas',
         'semester',
         'kuota',
+        'honor',
         'jadwal',
         'syarat_nilai',
         'syarat_ipk',
@@ -30,6 +31,7 @@ class Pengumuman extends Model
 
     protected $casts = [
         'kuota' => 'integer',
+        'honor' => 'integer',
         'sks' => 'integer',
         'syarat_ipk' => 'decimal:2',
         'tenggat' => 'datetime',

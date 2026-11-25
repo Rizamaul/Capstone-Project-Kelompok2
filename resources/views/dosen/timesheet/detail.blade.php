@@ -49,19 +49,19 @@
 
         <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-100">
             <span class="text-gray-500">Mata Kuliah</span>
-            <span class="font-semibold text-gray-800 text-right">{{ $entry->mata_kuliah ?? 'Algoritma & Struktur Data' }}</span>
+            <span class="font-semibold text-gray-800 text-right">{{ $courseName ?? $entry->mata_kuliah ?? 'Algoritma & Struktur Data' }}</span>
         </div>
         <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-100">
             <span class="text-gray-500">Kode Mata Kuliah</span>
-            <span class="font-mono font-semibold text-gray-800 text-right">IK2402</span>
+            <span class="font-mono font-semibold text-gray-800 text-right">{{ $code ?? '—' }}</span>
         </div>
         <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-100">
             <span class="text-gray-500">Kelas</span>
-            <span class="font-semibold text-gray-800 text-right">2402</span>
+            <span class="font-semibold text-gray-800 text-right">{{ $kelas ?: '—' }}</span>
         </div>
         <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-100">
             <span class="text-gray-500">Total SKS</span>
-            <span class="font-semibold text-gray-800 text-right">3 SKS</span>
+            <span class="font-semibold text-gray-800 text-right">{{ $sks ?? 3 }} SKS</span>
         </div>
         <div class="grid grid-cols-2 gap-4 py-2 border-b border-gray-100">
             <span class="text-gray-500">Tanggal Aktivitas</span>

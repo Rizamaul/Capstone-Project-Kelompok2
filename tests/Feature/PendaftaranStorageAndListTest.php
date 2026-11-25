@@ -471,6 +471,31 @@ class PendaftaranStorageAndListTest extends TestCase
             ->assertSee('mailto:aldo@example.test', false);
     }
 
+    public function test_dosen_can_stream_and_download_applicant_pdf_via_controller_route(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('pendaftaran/cv/test-cv.pdf', '%PDF-1.4 fake cv content');
+        Storage::disk('public')->put('pendaftaran/transkrip/test-transkrip.pdf', '%PDF-1.4 fake transkrip content');
+
+        $pendaftaran = $this->createPendaftaran([
+            'cv_path' => 'pendaftaran/cv/test-cv.pdf',
+            'transkrip_path' => 'pendaftaran/transkrip/test-transkrip.pdf',
+        ]);
+
+        $this->get('/dosen/pendaftar/'.$pendaftaran->id)
+            ->assertOk()
+            ->assertSee(route('dosen.pendaftar.berkas', ['pendaftaran' => $pendaftaran, 'jenis' => 'cv']))
+            ->assertSee(route('dosen.pendaftar.berkas', ['pendaftaran' => $pendaftaran, 'jenis' => 'transkrip']));
+
+        $this->get('/dosen/pendaftar/'.$pendaftaran->id.'/berkas/cv')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+
+        $this->get('/dosen/pendaftar/'.$pendaftaran->id.'/berkas/transkrip?download=1')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
     private function createLowongan(array $attributes = []): Pengumuman
     {
         return Pengumuman::query()->create(array_merge([

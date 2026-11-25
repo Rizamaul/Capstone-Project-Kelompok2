@@ -34,14 +34,62 @@
     </label>
 
     <label class="block">
-        <span class="mb-2 block text-sm font-semibold text-gray-700">Jadwal praktikum *</span>
-        <input name="jadwal" required maxlength="100" value="{{ old('jadwal', $lowongan['jadwal'] ?? '') }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
-        @error('jadwal') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
+        <span class="mb-2 block text-sm font-semibold text-gray-700">Nominal honor (Rp / jam)</span>
+        <input type="number" name="honor" min="0" step="1000" placeholder="Contoh: 35000" value="{{ old('honor', $lowongan['honor'] ?? 35000) }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+        @error('honor') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
     </label>
+
+    @php
+        $existingJadwal = old('jadwal', $lowongan['jadwal'] ?? '');
+        $defaultHari = 'Senin';
+        $defaultMulai = '08:00';
+        $defaultSelesai = '11:00';
+
+        if (preg_match('/\b(Senin|Selasa|Rabu|Kamis|Jumat|Sabtu|Minggu)\b/i', (string) $existingJadwal, $hariMatch)) {
+            $defaultHari = ucfirst(strtolower($hariMatch[1]));
+        } elseif ($existingJadwal !== '') {
+            $defaultHari = '';
+        }
+
+        if (preg_match_all('/(\d{1,2})[:.](\d{2})/', (string) $existingJadwal, $timeMatches) && count($timeMatches[0]) >= 2) {
+            $defaultMulai = str_pad($timeMatches[1][0], 2, '0', STR_PAD_LEFT).':'.$timeMatches[2][0];
+            $defaultSelesai = str_pad($timeMatches[1][1], 2, '0', STR_PAD_LEFT).':'.$timeMatches[2][1];
+        }
+    @endphp
+    <div class="block"
+         x-data="{
+            hari: @js($defaultHari),
+            jamMulai: @js($defaultMulai),
+            jamSelesai: @js($defaultSelesai),
+            get formattedJadwal() {
+                const start = (this.jamMulai || '08:00').replace(':', '.');
+                const end = (this.jamSelesai || '11:00').replace(':', '.');
+                const range = `${start} - ${end} WIB`;
+                return this.hari ? `${this.hari}, ${range}` : range;
+            }
+         }">
+        <span class="mb-2 block text-sm font-semibold text-gray-700">Jadwal praktikum *</span>
+        <input type="hidden" name="jadwal" :value="formattedJadwal">
+        <div class="grid grid-cols-1 sm:grid-cols-[120px_1fr_auto_1fr] items-center gap-2">
+            <select x-model="hari" aria-label="Hari praktikum" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Tanpa hari</option>
+                @foreach(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'] as $day)
+                    <option value="{{ $day }}">{{ $day }}</option>
+                @endforeach
+            </select>
+            <input type="time" x-model="jamMulai" required aria-label="Jam mulai praktikum" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+            <span class="text-center text-xs font-semibold text-gray-400">-</span>
+            <input type="time" x-model="jamSelesai" required aria-label="Jam selesai praktikum" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        <p class="mt-1.5 text-[11px] text-gray-500">
+            Format tersimpan: <span class="font-semibold text-[#2058B2]" x-text="formattedJadwal"></span>
+        </p>
+        @error('jadwal') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
+    </div>
 
     <label class="block">
         <span class="mb-2 block text-sm font-semibold text-gray-700">Tenggat pendaftaran *</span>
-        <input type="datetime-local" name="tenggat" required value="{{ old('tenggat', $lowongan['tenggat_input'] ?? '') }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+        <input type="text" data-datepicker="datetime" name="tenggat" required placeholder="DD/MM/YYYY HH:MM" value="{{ old('tenggat', $lowongan['tenggat_input'] ?? '') }}" class="w-full rounded-xl border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500 bg-white">
         @error('tenggat') <span class="mt-1 block text-xs text-red-600">{{ $message }}</span> @enderror
     </label>
 

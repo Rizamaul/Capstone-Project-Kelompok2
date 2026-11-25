@@ -99,7 +99,7 @@
         <div class="flex-1 ml-[260px] min-w-0 flex flex-col min-h-screen">
             
             <!-- Navbar Atas  -->
-            <header class="h-20 bg-white border-b border-gray-200 sticky top-0 z-20 flex items-center justify-between px-8 w-full">
+            <header class="h-20 bg-white border-b border-gray-200 sticky top-0 z-40 flex items-center justify-between px-8 w-full">
                 <div class="flex flex-1 min-w-0 items-center gap-3">
                     <!-- Badge Semester Ganjil 2026 -->
                     <div class="flex items-center shrink-0">
@@ -110,26 +110,95 @@
                     </div>
 
                     <!-- Kolom Pencarian -->
-                    <div class="flex-1 min-w-0">
+                    @php
+                        $dosenSearchAction = match (true) {
+                            request()->is('dosen/timesheet*') => route('dosen.timesheet'),
+                            request()->is('dosen/lowongan*') => route('dosen.lowongan.index'),
+                            default => route('dosen.pendaftar.index'),
+                        };
+                    @endphp
+                    <form action="{{ $dosenSearchAction }}" method="GET" class="flex-1 min-w-0">
                         <div class="relative w-full">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-gray-400">
+                            <button type="submit" aria-label="Cari" class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400 hover:text-[#1E5EFF] cursor-pointer">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            </span>
+                            </button>
                             <input
-                                type="text"
+                                type="search"
+                                name="q"
+                                value="{{ request('q') }}"
                                 class="w-full min-w-0 pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-[#1E5EFF]"
                                 placeholder="Cari pendaftar, matakuliah, atau berkas lainnya..."
                             >
                         </div>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- Bagian Kanan: Notifikasi & Profil Dosen (Menempel rapat di pojok kanan) -->
                 <div class="flex items-center gap-6 shrink-0 ml-8">
-                    <!-- Notifikasi -->
-                    <div class="relative cursor-pointer text-gray-600 hover:text-[#1E5EFF]">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-[#1E5EFF] rounded-full ring-2 ring-white"></span>
+                    <!-- Notifikasi Popover -->
+                    <div class="relative" x-data="{ openNotif: false }" @click.outside="openNotif = false" @keydown.escape.window="openNotif = false">
+                        <button type="button"
+                                @click.stop="openNotif = !openNotif"
+                                aria-label="Buka notifikasi dosen"
+                                class="relative cursor-pointer text-gray-600 hover:text-[#1E5EFF] p-1 rounded-lg transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            @if(!empty($dosenNotifications))
+                                <span class="absolute top-0 right-0 w-2.5 h-2.5 bg-[#1E5EFF] rounded-full ring-2 ring-white"></span>
+                            @endif
+                        </button>
+
+                        <div x-show="openNotif"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             x-cloak
+                             class="absolute right-0 mt-3 w-80 sm:w-96 bg-white rounded-2xl border border-gray-200 shadow-xl z-50 overflow-hidden">
+                            <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/60">
+                                <div>
+                                    <h3 class="text-sm font-bold text-gray-900">Notifikasi</h3>
+                                    <p class="text-[11px] text-gray-400">Aktivitas & peninjauan Portal Dosen</p>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full bg-blue-50 text-[#1E5EFF] font-bold text-xs">
+                                    {{ count($dosenNotifications ?? []) }}
+                                </span>
+                            </div>
+
+                            <div class="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                                @forelse($dosenNotifications ?? [] as $notif)
+                                    @php
+                                        $dotClass = match($notif['type']) {
+                                            'success' => 'bg-emerald-50 text-emerald-600 border-emerald-200',
+                                            'danger' => 'bg-red-50 text-red-600 border-red-200',
+                                            'warning' => 'bg-amber-50 text-amber-600 border-amber-200',
+                                            default => 'bg-blue-50 text-[#1E5EFF] border-blue-200',
+                                        };
+                                        $iconChar = match($notif['type']) {
+                                            'success' => '✓',
+                                            'danger' => '✕',
+                                            'warning' => '!',
+                                            default => 'i',
+                                        };
+                                    @endphp
+                                    <a href="{{ $notif['url'] }}" class="flex items-start gap-3 p-4 hover:bg-blue-50/40 transition-colors">
+                                        <span class="w-7 h-7 rounded-full border flex items-center justify-center shrink-0 text-xs font-bold {{ $dotClass }}">
+                                            {{ $iconChar }}
+                                        </span>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-gray-900">{{ $notif['title'] }}</p>
+                                            <p class="text-xs text-gray-600 mt-0.5 break-words">{{ $notif['message'] }}</p>
+                                            <p class="text-[10px] text-gray-400 mt-1">{{ $notif['time'] }}</p>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="p-6 text-center text-xs text-gray-400">
+                                        Belum ada notifikasi baru untuk ditinjau.
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Profil Dosen -->

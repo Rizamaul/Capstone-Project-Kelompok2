@@ -134,6 +134,10 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/pendaftar/{pendaftaran}', [DosenPendaftaran::class, 'show'])
         ->name('pendaftar.show');
 
+    Route::get('/pendaftar/{pendaftaran}/berkas/{jenis}', [DosenPendaftaran::class, 'showBerkas'])
+        ->whereIn('jenis', ['cv', 'transkrip'])
+        ->name('pendaftar.berkas');
+
     Route::post('/pendaftar/{pendaftaran}/verifikasi-berkas', [DosenPendaftaran::class, 'verifikasiBerkas'])
         ->name('pendaftar.verifikasi-berkas');
 
@@ -154,6 +158,9 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
 
     Route::get('/timesheet/daftar', [DosenTimesheet::class, 'index'])
         ->name('timesheet.index');
+
+    Route::get('/timesheet/export/pdf', [DosenTimesheet::class, 'exportPdf'])
+        ->name('timesheet.export-pdf');
 
     Route::get('/timesheet/{id}', [DosenTimesheet::class, 'show'])
         ->name('timesheet.show');

@@ -2,9 +2,16 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl pb-16">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-[#2058B2]">Pendaftar Asisten Praktikum</h1>
-        <p class="mt-1 text-sm text-gray-500">Tinjau berkas, hubungi pelamar, dan kelola tahapan wawancara.</p>
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-bold text-[#2058B2]">Pendaftar Asisten Praktikum</h1>
+            <p class="mt-1 text-sm text-gray-500">Tinjau berkas, hubungi pelamar, dan kelola tahapan wawancara.</p>
+        </div>
+        @if(request('q'))
+            <a href="{{ route('dosen.pendaftar.index') }}" class="text-xs font-semibold text-[#1E5EFF] hover:underline">
+                Reset pencarian "{{ request('q') }}" ✕
+            </a>
+        @endif
     </div>
 
     @if(session('success'))
@@ -50,7 +57,7 @@
                     @else
                         <p class="mt-1 text-xs text-amber-700">Akun pelamar belum terhubung; kontak akun belum tersedia.</p>
                     @endif
-                    <p class="mt-3 whitespace-pre-line text-sm text-gray-700">{{ $pendaftaran->motivasi }}</p>
+                    <p class="mt-3 whitespace-pre-line break-words text-sm text-gray-700">{{ $pendaftaran->motivasi }}</p>
 
                     @if($pendaftaran->jadwal_wawancara)
                         <div class="mt-3 p-3 bg-blue-50/60 rounded-xl border border-blue-100/80 text-xs text-blue-900 space-y-1">
@@ -59,19 +66,15 @@
                             </p>
                             <p class="text-blue-800 text-[11px]">Metode: {{ $pendaftaran->metode_wawancara === 'online' ? 'Daring' : ($pendaftaran->metode_wawancara === 'langsung' ? 'Tatap muka' : 'Belum dicatat') }}</p>
                             @if($pendaftaran->lokasi_wawancara)
-                                <p class="text-blue-800 text-[11px]">📍 Lokasi: {{ $pendaftaran->lokasi_wawancara }}</p>
+                                <p class="text-blue-800 text-[11px] break-words">📍 Lokasi: {{ $pendaftaran->lokasi_wawancara }}</p>
                             @endif
                         </div>
                     @endif
 
                     @if($pendaftaran->catatan_dosen)
-                        <p class="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700"><strong>Catatan:</strong> {{ $pendaftaran->catatan_dosen }}</p>
+                        <p class="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700 break-words"><strong>Catatan:</strong> {{ $pendaftaran->catatan_dosen }}</p>
                     @endif
                 </div>
-
-                <a href="{{ route('dosen.pendaftar.show', $pendaftaran) }}" onclick="event.stopPropagation()" class="shrink-0 rounded-lg bg-[#2058B2] px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700">
-                    Buka Peninjauan
-                </a>
             </div>
         </article>
     @empty

@@ -71,6 +71,7 @@
             @foreach([
                 ['Tenggat',        $lowongan['tenggat']],
                 ['Kuota',          $lowongan['terisi'] . ' / ' . $lowongan['kuota'] . ' asisten'],
+                ['Honor',          !empty($lowongan['honor']) ? 'Rp ' . number_format((int) $lowongan['honor'], 0, ',', '.') . ' / jam' : 'Sesuai SK Dekanat'],
                 ['Dosen Pengampu', $lowongan['dosen']],
                 ['Jadwal',         $lowongan['jadwal']],
                 ['Kelas',          $lowongan['kelas'] ?? 'Belum ditentukan'],

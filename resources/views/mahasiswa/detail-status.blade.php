@@ -90,9 +90,9 @@
                                     <div aria-label="{{ $statusStep === 'gagal' ? 'Tahap gagal' : ($statusStep === 'dilewati' ? 'Tahap tidak dilanjutkan' : ($statusStep === 'notifikasi' ? 'Notifikasi wawancara' : ($statusStep === 'selesai' ? 'Tahap selesai' : 'Menunggu tahap'))) }}" class="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-bold {{ $statusClasses }}">
                                         {{ $statusIcon }}
                                     </div>
-                                    <div>
+                                    <div class="min-w-0">
                                         <p class="text-xs font-bold {{ $labelColor }}">{{ $step['judul'] }}</p>
-                                        <p class="text-xs mt-0.5 {{ $detailColor }}">{{ $step['deskripsi'] }}</p>
+                                        <p class="text-xs mt-0.5 break-words [overflow-wrap:anywhere] {{ $detailColor }}">{{ $step['deskripsi'] }}</p>
                                     </div>
                                 </div>
                                 <div class="text-right shrink-0">
@@ -116,7 +116,7 @@
                         <span class="w-5 h-5 rounded-full bg-red-100 text-red-600 flex items-center justify-center font-bold text-xs">✕</span>
                         <h4 class="text-xs font-bold text-red-900">Kekurangan / Penolakan Berkas</h4>
                     </div>
-                    <p class="text-xs text-red-800 leading-relaxed">
+                    <p class="text-xs text-red-800 leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-line">
                         {{ $pendaftaran['catatan_berkas'] ?: 'Berkas pendaftaran Anda belum memenuhi persyaratan yang ditentukan dosen.' }}
                     </p>
                     <p class="text-[11px] text-red-600 pt-1">
@@ -219,7 +219,7 @@
                 <h4 class="text-xs font-bold text-amber-900">
                     {{ $pendaftaran['status'] === 'disetujui' ? 'Pendaftaran telah disetujui' : ($pendaftaran['status'] === 'ditolak' ? 'Pendaftaran ditolak' : 'Pendaftaran masi tahap menunggu') }}
                 </h4>
-                <p class="text-xs text-amber-800/90 mt-2 leading-relaxed">
+                <p class="text-xs text-amber-800/90 mt-2 leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-line">
                     {{ $pendaftaran['catatan_dosen'] ?: 'Dosen belum mengonfirmasi hasil seleksi. lihat catatan diatas untuk informasi lebih lanjut.' }}
                 </p>
             </div>

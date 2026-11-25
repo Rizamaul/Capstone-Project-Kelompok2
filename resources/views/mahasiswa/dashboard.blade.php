@@ -50,7 +50,7 @@
                 </span>
             </div>
             <div class="mt-4">
-                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['pendaftaran_saya'] ?: 3 }}</p>
+                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['pendaftaran_saya'] }}</p>
                 <p class="text-[11px] text-gray-400 mt-1">Dalam seluruh periode</p>
             </div>
         </div>
@@ -64,7 +64,7 @@
                 </span>
             </div>
             <div class="mt-4">
-                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['jam_disetujui'] ?: 6.5 }}</p>
+                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['jam_disetujui'] }}</p>
                 <p class="text-[11px] text-gray-400 mt-1">Dalam seluruh periode</p>
             </div>
         </div>
@@ -78,7 +78,7 @@
                 </span>
             </div>
             <div class="mt-4">
-                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['menunggu_review'] ?: 1 }}</p>
+                <p class="text-3xl font-extrabold text-gray-900">{{ $statistik['menunggu_review'] }}</p>
                 <p class="text-[11px] text-gray-400 mt-1">TimeSheet diajukan</p>
             </div>
         </div>
@@ -99,7 +99,8 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
             @forelse($lowongans as $lowongan)
-                <article class="bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow">
+                <article onclick="window.location.href='{{ route('mahasiswa.lowongan.show', $lowongan['id']) }}'"
+                         class="bg-white rounded-2xl border border-gray-200/90 p-6 shadow-xs flex flex-col justify-between hover:border-[#1E5EFF] hover:shadow-md cursor-pointer transition-all group">
                     <div>
                         <!-- Header Badges -->
                         <div class="flex items-center justify-between gap-2">
@@ -112,7 +113,7 @@
                         </div>
 
                         <!-- Course Title & Lecturer -->
-                        <h3 class="text-base font-bold text-gray-900 mt-3">{{ $lowongan['nama'] }}</h3>
+                        <h3 class="text-base font-bold text-gray-900 mt-3 group-hover:text-[#1E5EFF] transition-colors">{{ $lowongan['nama'] }}</h3>
                         <p class="text-xs text-gray-500 mt-1">Dosen: {{ $lowongan['dosen'] }}</p>
 
                         <!-- Divider -->

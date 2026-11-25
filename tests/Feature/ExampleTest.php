@@ -39,4 +39,38 @@ class ExampleTest extends TestCase
         $response->assertSee('Keluar');
         $response->assertSee('href="'.route('home').'"', false);
     }
+
+    public function test_role_notifications_popover_renders_for_dosen_and_mahasiswa(): void
+    {
+        $lowongan = \App\Models\Pengumuman::query()->create([
+            'dosen_id' => 1,
+            'mata_kuliah' => 'Basis Data',
+            'kode' => 'IF202',
+            'sks' => 3,
+            'kuota' => 2,
+            'jadwal' => 'Selasa 09.00',
+            'syarat' => 'Nilai B',
+            'tenggat' => now()->addWeek(),
+            'status_aktif' => true,
+        ]);
+
+        \App\Models\Pendaftaran::query()->create([
+            'lowongan_id' => $lowongan->id,
+            'nama' => 'Budi Santoso',
+            'nim' => '105223001',
+            'status' => 'menunggu',
+            'berkas_diverifikasi' => false,
+            'status_berkas' => 'menunggu',
+        ]);
+
+        $dosenResponse = $this->get(route('dosen.dashboard', absolute: false));
+        $dosenResponse->assertOk()
+            ->assertSee('Pendaftar Baru Menunggu Verifikasi')
+            ->assertSee('Budi Santoso melamar pada Basis Data.');
+
+        $mahasiswaResponse = $this->get(route('mahasiswa.dashboard', absolute: false));
+        $mahasiswaResponse->assertOk()
+            ->assertSee('Pendaftaran Terkirim')
+            ->assertSee('Lamaran Basis Data sedang menunggu peninjauan dosen.');
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Pendaftaran;
 use App\Models\Pengumuman;
 use App\Models\Timesheet;
 use Tests\TestCase;
@@ -10,7 +11,7 @@ class TimesheetWorkflowTest extends TestCase
 {
     public function test_mahasiswa_can_submit_timesheet(): void
     {
-        $lowongan = $this->createActiveLowongan();
+        $lowongan = $this->createApprovedAssistantLowongan();
 
         $response = $this->post('/mahasiswa/timesheet', [
             'matakuliah' => $lowongan->kode.' · '.$lowongan->mata_kuliah,
@@ -53,7 +54,7 @@ class TimesheetWorkflowTest extends TestCase
 
     public function test_student_timesheet_page_renders_active_courses_and_empty_history(): void
     {
-        $lowongan = $this->createActiveLowongan();
+        $lowongan = $this->createApprovedAssistantLowongan();
 
         $response = $this->get('/mahasiswa/timesheet');
 
@@ -61,6 +62,26 @@ class TimesheetWorkflowTest extends TestCase
             ->assertSee('Riwayat TimeSheet')
             ->assertSee($lowongan->kode.' · '.$lowongan->mata_kuliah)
             ->assertSee('Belum ada timesheet.');
+    }
+
+    public function test_mahasiswa_who_is_not_approved_assistant_cannot_submit_timesheet(): void
+    {
+        $lowongan = $this->createActiveLowongan();
+
+        $this->get('/mahasiswa/timesheet')
+            ->assertOk()
+            ->assertSee('Pengisian timesheet hanya tersedia untuk mahasiswa yang sudah berstatus');
+
+        $response = $this->post('/mahasiswa/timesheet', [
+            'matakuliah' => $lowongan->kode.' · '.$lowongan->mata_kuliah,
+            'tanggal' => now()->subDay()->toDateString(),
+            'jam' => '2',
+            'aktivitas' => 'Mendampingi praktikum',
+            'deskripsi' => 'Mencoba mengisi sebelum diterima sebagai asisten.',
+        ]);
+
+        $response->assertSessionHasErrors('matakuliah');
+        $this->assertDatabaseCount('timesheet', 0);
     }
 
     public function test_dosen_timesheet_page_renders_persisted_entries(): void
@@ -215,6 +236,60 @@ class TimesheetWorkflowTest extends TestCase
             'aktivitas' => 'Mendampingi Praktikum Revisi',
             'status_approval' => 'pending',
         ]);
+    }
+
+    public function test_dosen_can_export_timesheet_pdf(): void
+    {
+        $approved = $this->createPendingTimesheet();
+        $approved->update(['status_approval' => 'approved']);
+
+        $response = $this->get('/dosen/timesheet/export/pdf?status=approved');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    public function test_approved_timesheet_cannot_be_edited_or_updated(): void
+    {
+        $timesheet = $this->createPendingTimesheet();
+        $timesheet->update(['status_approval' => 'approved']);
+
+        $this->get('/mahasiswa/timesheet/'.$timesheet->id)
+            ->assertOk()
+            ->assertDontSee('Edit Timesheet');
+
+        $this->get('/mahasiswa/timesheet/'.$timesheet->id.'/edit')
+            ->assertForbidden();
+
+        $this->put('/mahasiswa/timesheet/'.$timesheet->id, [
+            'matakuliah' => $timesheet->mata_kuliah,
+            'tanggal' => now()->subDay()->toDateString(),
+            'jam' => '8.0',
+            'aktivitas' => 'Manipulasi Jam',
+            'deskripsi' => 'Mencoba ubah setelah disetujui.',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('timesheet', [
+            'id' => $timesheet->id,
+            'jumlah_jam' => 2.5,
+            'status_approval' => 'approved',
+        ]);
+    }
+
+    private function createApprovedAssistantLowongan(): Pengumuman
+    {
+        $lowongan = $this->createActiveLowongan();
+
+        Pendaftaran::query()->create([
+            'lowongan_id' => $lowongan->id,
+            'nama' => 'Mahasiswa Asisten',
+            'nim' => '105223045',
+            'status' => 'disetujui',
+            'status_seleksi' => 'disetujui',
+            'is_published' => true,
+        ]);
+
+        return $lowongan;
     }
 
     private function createActiveLowongan(): Pengumuman

@@ -36,7 +36,7 @@
         <p class="mt-2 text-sm text-slate-500">Temukan mata kuliah yang sesuai dengan minat dan kemampuanmu.</p>
     </header>
 
-    <form method="GET" action="{{ route('mahasiswa.lowongan.index') }}" class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_170px_170px_auto]">
+    <form method="GET" action="{{ route('mahasiswa.lowongan.index') }}" class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_170px_170px]">
         <label class="relative block">
             <span class="sr-only">Cari mata kuliah atau kode</span>
             <span class="absolute left-4 top-3 text-slate-400" aria-hidden="true">⌕</span>
@@ -58,16 +58,6 @@
                 <option value="Kuota terbanyak" @selected(request('sort') === 'Kuota terbanyak')>Kuota terbanyak</option>
             </select>
         </label>
-        <div class="flex items-center gap-2">
-            <button type="submit" class="w-full md:w-auto px-5 py-3 rounded-xl bg-[#2058B2] hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer">
-                Filter
-            </button>
-            @if(request('q') || (request('status') && request('status') !== 'Semua'))
-                <a href="{{ route('mahasiswa.lowongan.index') }}" class="px-3 py-3 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-semibold" title="Reset filter">
-                    ✕
-                </a>
-            @endif
-        </div>
     </form>
 
     <div class="flex items-center justify-between gap-3">

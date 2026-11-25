@@ -2,8 +2,8 @@
 
 @section('content')
 @php
-    $cvUrl = $pendaftaran->cv_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->cv_path) : null;
-    $transkripUrl = $pendaftaran->transkrip_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) : null;
+    $cvUrl = $pendaftaran->cv_path ? route('dosen.pendaftar.berkas', ['pendaftaran' => $pendaftaran, 'jenis' => 'cv']) : null;
+    $transkripUrl = $pendaftaran->transkrip_path ? route('dosen.pendaftar.berkas', ['pendaftaran' => $pendaftaran, 'jenis' => 'transkrip']) : null;
     $defaultPdfUrl = $cvUrl ?: $transkripUrl;
     $defaultPdfTitle = $cvUrl ? 'Curriculum Vitae (CV) - ' . $pendaftaran->nama : ($transkripUrl ? 'Transkrip Nilai / KSM - ' . $pendaftaran->nama : '');
     $applicationOpen = $pendaftaran->status === 'menunggu' && ! $pendaftaran->is_published;
@@ -115,7 +115,7 @@
                 <h2 class="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                     <span>✍️</span> Esai Motivasi & Portofolio
                 </h2>
-                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 text-xs text-gray-700 leading-relaxed whitespace-pre-line">
+                <div class="bg-gray-50 rounded-xl p-5 border border-gray-200 text-xs text-gray-700 leading-relaxed whitespace-pre-line break-words [overflow-wrap:anywhere]">
 {{ $pendaftaran->motivasi }}
                 </div>
 
@@ -189,8 +189,8 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="waktu_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Tanggal dan waktu</label>
-                                <input id="waktu_wawancara" type="datetime-local" name="waktu_wawancara" value="{{ old('waktu_wawancara', $pendaftaran->waktu_wawancara?->format('Y-m-d\\TH:i')) }}" required class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs">
+                                <label for="waktu_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Tanggal dan waktu (DD/MM/YYYY HH:MM)</label>
+                                <input id="waktu_wawancara" type="text" data-datepicker="datetime" name="waktu_wawancara" placeholder="DD/MM/YYYY HH:MM" value="{{ old('waktu_wawancara', $pendaftaran->waktu_wawancara?->format('Y-m-d\\TH:i')) }}" required class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs">
                             </div>
                         </div>
                         <div>
@@ -291,7 +291,7 @@
                         @endif
                     </div>
                     @if($pendaftaran->status_berkas === 'ditolak' && $pendaftaran->catatan_berkas)
-                        <div class="mt-2 pt-2 border-t border-red-200/60 text-xs text-red-700 leading-relaxed">
+                        <div class="mt-2 pt-2 border-t border-red-200/60 text-xs text-red-700 leading-relaxed break-words [overflow-wrap:anywhere] whitespace-pre-line">
                             <span class="font-bold">Alasan Penolakan:</span> {{ $pendaftaran->catatan_berkas }}
                         </div>
                     @endif
@@ -347,7 +347,7 @@
                                         class="px-3 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer shadow-xs">
                                     Pratinjau
                                 </button>
-                                <a href="{{ $cvUrl }}" target="_blank" download class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
+                                <a href="{{ $cvUrl }}?download=1" target="_blank" class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
                                     ⬇
                                 </a>
                             </div>
@@ -369,7 +369,7 @@
                                         class="px-3 py-1.5 bg-[#1E5EFF] text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer shadow-xs">
                                     Pratinjau
                                 </button>
-                                <a href="{{ $transkripUrl }}" target="_blank" download class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
+                                <a href="{{ $transkripUrl }}?download=1" target="_blank" class="p-1.5 text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50" title="Unduh Berkas">
                                     ⬇
                                 </a>
                             </div>
@@ -473,7 +473,7 @@
                 </span>
                 <div class="flex items-center gap-2 ml-auto">
                     <button type="button" @click="showPdfModal = false" class="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors cursor-pointer">Tutup</button>
-                    <a :href="activePdfUrl" target="_blank" download class="px-4 py-2 bg-[#1E5EFF] text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm">
+                    <a :href="activePdfUrl ? activePdfUrl + '?download=1' : '#'" target="_blank" class="px-4 py-2 bg-[#1E5EFF] text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1.5 shadow-sm">
                         <span>⬇</span> Unduh PDF
                     </a>
                 </div>

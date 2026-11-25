@@ -47,8 +47,8 @@ class DashboardController extends Controller
 
         if (auth()->check()) {
             $pendaftaranQuery->where('user_id', $userId);
-        } else {
-            $pendaftaranQuery->whereKey(session('mahasiswa.pendaftaran_id', 0));
+        } elseif (session('mahasiswa.pendaftaran_id')) {
+            $pendaftaranQuery->whereKey(session('mahasiswa.pendaftaran_id'));
         }
 
         $statistik = [

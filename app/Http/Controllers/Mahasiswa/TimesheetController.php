@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pendaftaran;
 use App\Models\Pengumuman;
 use App\Models\Timesheet;
 use Illuminate\Http\RedirectResponse;
@@ -15,15 +16,17 @@ class TimesheetController extends Controller
     public function index(): View
     {
         $userId = auth()->id() ?? 1;
+        $courseMetaMap = $this->courseMetaMap();
 
         $entries = Timesheet::query()
             ->where('asisten_id', $userId)
             ->latest('tanggal')
             ->get()
-            ->map(function (Timesheet $entry): array {
+            ->map(function (Timesheet $entry) use ($courseMetaMap): array {
                 $rawCourse = $entry->mata_kuliah ?? 'Algoritma & Struktur Data';
                 $parts = explode(' · ', $rawCourse, 2);
-                $code = count($parts) === 2 ? $parts[0] : 'IF101';
+                $meta = $courseMetaMap[$rawCourse] ?? null;
+                $code = $meta['kode'] ?? (count($parts) === 2 ? $parts[0] : '—');
                 $courseName = count($parts) === 2 ? $parts[1] : $rawCourse;
 
                 return [
@@ -31,13 +34,13 @@ class TimesheetController extends Controller
                     'course' => $courseName,
                     'raw_course' => $rawCourse,
                     'code' => $code,
-                    'class' => '2402',
-                    'sks' => 3,
+                    'class' => $meta['kelas'] ?? null,
+                    'sks' => $meta['sks'] ?? 3,
                     'week' => 'Minggu '.$entry->tanggal->weekOfYear,
                     'title' => $entry->aktivitas ?: 'Mendampingi Praktikum',
                     'activity' => $entry->uraian_pekerjaan ?: 'Mendampingi sesi lab dan membantu mahasiswa.',
                     'date' => $entry->tanggal->translatedFormat('d M, Y'),
-                    'time_range' => '08.00 - 10.00 WIB',
+                    'time_range' => $meta['jadwal'] ?? '08.00 - 11.00 WIB',
                     'hours' => (float) $entry->jumlah_jam,
                     'status' => match ($entry->status_approval) {
                         'approved' => 'Disetujui',
@@ -60,26 +63,32 @@ class TimesheetController extends Controller
             ->count();
 
         $matakuliahAktif = $this->activeCourses();
+        $isAsistenAktif = count($matakuliahAktif) > 0;
 
-        return view('mahasiswa.timesheet', compact('entries', 'totalJamDisetujui', 'pendingCount', 'matakuliahAktif'));
+        return view('mahasiswa.timesheet', compact('entries', 'totalJamDisetujui', 'pendingCount', 'matakuliahAktif', 'isAsistenAktif'));
     }
 
     public function show(Timesheet $timesheet): View
     {
         $rawCourse = $timesheet->mata_kuliah ?? 'Algoritma & Struktur Data';
         $parts = explode(' · ', $rawCourse, 2);
-        $code = count($parts) === 2 ? $parts[0] : 'IF101';
+        $meta = $this->courseMetaMap()[$rawCourse] ?? null;
+        $code = $meta['kode'] ?? (count($parts) === 2 ? $parts[0] : '—');
         $courseName = count($parts) === 2 ? $parts[1] : $rawCourse;
 
         return view('mahasiswa.timesheet-detail', [
             'entry' => $timesheet,
             'courseName' => $courseName,
             'code' => $code,
+            'kelas' => $meta['kelas'] ?? null,
+            'sks' => $meta['sks'] ?? 3,
         ]);
     }
 
     public function edit(Timesheet $timesheet): View
     {
+        abort_if($timesheet->status_approval === 'approved', 403, 'Timesheet yang sudah disetujui tidak dapat diubah lagi.');
+
         $rawCourse = $timesheet->mata_kuliah ?? 'Algoritma & Struktur Data';
         $parts = explode(' · ', $rawCourse, 2);
         $code = count($parts) === 2 ? $parts[0] : 'IF101';
@@ -96,6 +105,8 @@ class TimesheetController extends Controller
 
     public function update(Request $request, Timesheet $timesheet): RedirectResponse
     {
+        abort_if($timesheet->status_approval === 'approved', 403, 'Timesheet yang sudah disetujui tidak dapat diubah lagi.');
+
         $matakuliahAktif = $this->activeCourses();
 
         $validated = $request->validate([
@@ -122,6 +133,14 @@ class TimesheetController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $matakuliahAktif = $this->activeCourses();
+
+        if ($matakuliahAktif === []) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'matakuliah' => 'Pengisian timesheet hanya tersedia untuk mahasiswa yang sudah berstatus asisten praktikum (pendaftaran disetujui).',
+                ]);
+        }
 
         $validated = $request->validate([
             'matakuliah' => ['required', 'string', Rule::in($matakuliahAktif)],
@@ -150,12 +169,46 @@ class TimesheetController extends Controller
      */
     private function activeCourses(): array
     {
-        return Pengumuman::query()
-            ->where('status_aktif', true)
-            ->where('tenggat', '>', now())
-            ->orderBy('mata_kuliah')
+        $query = Pendaftaran::query()
+            ->with('lowongan')
+            ->where('status', 'disetujui');
+
+        if (auth()->check()) {
+            $query->where('user_id', auth()->id());
+        } elseif (session('mahasiswa.pendaftaran_id')) {
+            $query->where('id', session('mahasiswa.pendaftaran_id'));
+        }
+
+        return $query
             ->get()
+            ->map(fn (Pendaftaran $pendaftaran): ?Pengumuman => $pendaftaran->lowongan)
+            ->filter()
+            ->unique('id')
+            ->sortBy('mata_kuliah')
             ->map(fn (Pengumuman $lowongan): string => trim(($lowongan->kode ? $lowongan->kode.' · ' : '').$lowongan->mata_kuliah))
+            ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, array{kode: string, kelas: ?string, sks: int, jadwal: ?string}>
+     */
+    private function courseMetaMap(): array
+    {
+        $map = [];
+
+        foreach (Pengumuman::query()->latest()->get() as $lowongan) {
+            $key = trim(($lowongan->kode ? $lowongan->kode.' · ' : '').$lowongan->mata_kuliah);
+            $meta = [
+                'kode' => $lowongan->kode ?? '—',
+                'kelas' => $lowongan->kelas ?: null,
+                'sks' => (int) ($lowongan->sks ?? 3),
+                'jadwal' => $lowongan->jadwal ?: null,
+            ];
+            $map[$key] = $meta;
+            $map[$lowongan->mata_kuliah] = $map[$lowongan->mata_kuliah] ?? $meta;
+        }
+
+        return $map;
     }
 }

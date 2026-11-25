@@ -15,6 +15,8 @@ class LowonganController extends Controller
 {
     public function index(Request $request): JsonResponse|View
     {
+        $q = trim((string) $request->query('q', ''));
+
         $lowongans = Pengumuman::query()
             ->withCount([
                 'pendaftarans',
@@ -22,6 +24,15 @@ class LowonganController extends Controller
                     ->where('status_seleksi', 'disetujui')
                     ->where('is_published', true),
             ])
+            ->when($q !== '', function ($query) use ($q): void {
+                $query->where(function ($subQuery) use ($q): void {
+                    $subQuery->where('mata_kuliah', 'like', "%{$q}%")
+                        ->orWhere('kode', 'like', "%{$q}%")
+                        ->orWhere('kelas', 'like', "%{$q}%")
+                        ->orWhere('semester', 'like', "%{$q}%")
+                        ->orWhere('deskripsi', 'like', "%{$q}%");
+                });
+            })
             ->latest()
             ->get()
             ->map(fn (Pengumuman $lowongan): array => $this->present($lowongan))
@@ -42,6 +53,7 @@ class LowonganController extends Controller
     public function show(Request $request, int $id): JsonResponse|View
     {
         $lowongan = Pengumuman::query()
+            ->with('dosen')
             ->withCount([
                 'pendaftarans',
                 'pendaftarans as accepted_count' => fn ($query) => $query
@@ -167,6 +179,7 @@ class LowonganController extends Controller
             'kelas' => ['nullable', 'string', 'max:50'],
             'semester' => ['nullable', 'string', 'max:60'],
             'kuota' => [...$required, 'integer', 'min:1'],
+            'honor' => ['nullable', 'integer', 'min:0'],
             'jadwal' => [...$required, 'string', 'max:100'],
             'tenggat' => [...$required, 'date'],
             'syarat_nilai' => ['nullable', 'string', 'max:10'],
@@ -193,6 +206,7 @@ class LowonganController extends Controller
             'kelas' => 'kelas',
             'semester' => 'semester',
             'kuota' => 'kuota',
+            'honor' => 'honor',
             'jadwal' => 'jadwal',
             'tenggat' => 'tenggat',
             'syarat_nilai' => 'syarat_nilai',
@@ -236,15 +250,18 @@ class LowonganController extends Controller
         return [
             'id' => $lowongan->id,
             'nama' => $lowongan->mata_kuliah,
+            'dosen' => $lowongan->dosen?->name ?? 'Dosen pengampu',
             'kode' => $lowongan->kode ?? 'MK',
             'sks' => $lowongan->sks,
             'kelas' => $lowongan->kelas,
             'semester' => $lowongan->semester,
             'kuota' => $lowongan->kuota,
+            'honor' => $lowongan->honor,
             'terisi' => $terisi,
             'total_pendaftar' => $lowongan->pendaftarans_count ?? $lowongan->pendaftarans()->count(),
             'jadwal' => $lowongan->jadwal ?? 'Belum diatur',
             'tenggat' => $lowongan->tenggat?->format('Y-m-d'),
+            'tenggat_label' => $lowongan->tenggat?->translatedFormat('d M Y') ?? '-',
             'tenggat_input' => $lowongan->tenggat?->format('Y-m-d\TH:i'),
             'status' => $lowongan->status_aktif
                 && $lowongan->tenggat?->isFuture()
@@ -254,6 +271,7 @@ class LowonganController extends Controller
             'status_aktif' => $lowongan->status_aktif ? 'aktif' : 'tutup',
             'deskripsi' => $lowongan->deskripsi ?? $lowongan->syarat,
             'syarat' => $lowongan->syarat_nilai ?? $lowongan->syarat,
+            'persyaratan' => $lowongan->syarat,
             'syarat_nilai' => $lowongan->syarat_nilai,
             'syarat_ipk' => $lowongan->syarat_ipk,
             'berkas_diminta' => $this->documents($lowongan),

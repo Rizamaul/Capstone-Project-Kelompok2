@@ -24,14 +24,38 @@
             </p>
         </div>
         <div>
-            <button type="button" 
-                    @click="addModalOpen = true"
-                    class="px-5 py-3 bg-[#1E5EFF] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center gap-2 cursor-pointer">
-                <span class="text-sm font-black">+</span>
-                <span>Tambah Timesheet</span>
-            </button>
+            @if($isAsistenAktif ?? false)
+                <button type="button" 
+                        @click="addModalOpen = true"
+                        class="px-5 py-3 bg-[#1E5EFF] text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center gap-2 cursor-pointer">
+                    <span class="text-sm font-black">+</span>
+                    <span>Tambah Timesheet</span>
+                </button>
+            @else
+                <button type="button" 
+                        disabled
+                        title="Hanya mahasiswa yang sudah diterima sebagai asisten praktikum yang dapat mengisi timesheet"
+                        class="px-5 py-3 bg-gray-100 text-gray-400 text-xs font-bold rounded-xl cursor-not-allowed inline-flex items-center gap-2">
+                    <span class="text-sm font-black">+</span>
+                    <span>Tambah Timesheet</span>
+                </button>
+            @endif
         </div>
     </div>
+
+    @if(!($isAsistenAktif ?? false))
+        <div class="rounded-2xl border border-amber-200 bg-[#FFF9EB] p-4 text-xs text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3" role="status">
+            <div class="flex items-start sm:items-center gap-2.5">
+                <span class="text-base">⚠️</span>
+                <p class="font-medium leading-relaxed">
+                    Pengisian timesheet hanya tersedia untuk mahasiswa yang sudah berstatus <strong>Asisten Praktikum (pendaftaran disetujui)</strong>.
+                </p>
+            </div>
+            <a href="{{ route('mahasiswa.status') }}" class="shrink-0 font-bold text-[#1E5EFF] hover:underline">
+                Cek Status Pendaftaran →
+            </a>
+        </div>
+    @endif
 
     @if(session('success'))
         <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800" role="status">
@@ -90,7 +114,7 @@
                 </span>
             </div>
             <div class="mt-4">
-                <p class="text-3xl font-extrabold text-gray-900">{{ $totalJamDisetujui ?: 7 }}</p>
+                <p class="text-3xl font-extrabold text-gray-900">{{ $totalJamDisetujui }}</p>
                 <p class="text-[11px] text-gray-400 mt-1">Akumulasi jam disetujui</p>
             </div>
         </div>
@@ -105,7 +129,7 @@
             </div>
             <div class="mt-4">
                 <p class="text-3xl font-extrabold text-gray-900">{{ max(0, 40 - $totalJamDisetujui) }} <span class="text-xs font-semibold text-gray-400">Jam</span></p>
-                <p class="text-[11px] text-gray-400 mt-1">Batas total: 40 jam - {{ $totalJamDisetujui ?: 40 }} - jam disetujui</p>
+                <p class="text-[11px] text-gray-400 mt-1">Batas total: 40 jam - {{ $totalJamDisetujui }} jam disetujui</p>
             </div>
         </div>
 
@@ -157,7 +181,9 @@
                                     <span class="px-2 py-0.5 rounded bg-blue-100/70 text-[#1E5EFF] font-bold text-[10px]">
                                         {{ $entry['code'] }}
                                     </span>
-                                    <span class="text-[11px] text-gray-400 font-medium">Kelas {{ $entry['class'] }}</span>
+                                    @if(!empty($entry['class']))
+                                        <span class="text-[11px] text-gray-400 font-medium">Kelas {{ $entry['class'] }}</span>
+                                    @endif
                                     <span class="text-[11px] text-gray-400 font-medium">{{ $entry['sks'] }} SKS</span>
                                 </div>
                             </td>
@@ -247,7 +273,7 @@
             <!-- Box Catatan -->
             <div class="bg-[#FFF9EB] border border-[#FDE68A] rounded-2xl p-5 space-y-2">
                 <p class="text-xs font-bold text-[#92400E]">Catatan Dosen:</p>
-                <p class="text-xs text-[#92400E]/90 leading-relaxed font-medium" x-text="rejectionNote"></p>
+                <p class="text-xs text-[#92400E]/90 leading-relaxed font-medium break-words [overflow-wrap:anywhere] whitespace-pre-line" x-text="rejectionNote"></p>
             </div>
 
             <div class="pt-2">
@@ -292,8 +318,8 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Tanggal</label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E5EFF]">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tanggal (DD/MM/YYYY)</label>
+                        <input type="text" data-datepicker="date" name="tanggal" value="{{ old('tanggal', now()->toDateString()) }}" max="{{ now()->toDateString() }}" placeholder="DD/MM/YYYY" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] bg-white">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">Jumlah Jam</label>

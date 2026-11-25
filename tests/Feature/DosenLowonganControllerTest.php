@@ -44,6 +44,7 @@ class DosenLowonganControllerTest extends TestCase
             'kode' => '2404',
             'sks' => 3,
             'kuota' => 2,
+            'honor' => 45000,
             'jadwal' => 'Rabu 10.00',
             'tenggat' => now()->addWeek()->toDateString(),
             'syarat' => 'Nilai minimum B.',
@@ -57,6 +58,7 @@ class DosenLowonganControllerTest extends TestCase
         $this->assertDatabaseHas('pengumuman', [
             'mata_kuliah' => 'Jaringan Komputer',
             'kode' => '2404',
+            'honor' => 45000,
             'status_aktif' => true,
         ]);
     }

@@ -73,6 +73,7 @@ class LowonganController extends Controller
             'dosen' => $lowongan->dosen?->name ?? 'Dosen pengampu',
             'sks' => $lowongan->sks,
             'kuota' => $lowongan->kuota,
+            'honor' => $lowongan->honor,
             'terisi' => $lowongan->terisi,
             'tenggat' => $lowongan->tenggat?->translatedFormat('d M Y'),
             'tenggat_iso' => $lowongan->tenggat?->toDateString(),

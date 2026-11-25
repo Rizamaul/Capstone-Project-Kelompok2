@@ -10,15 +10,32 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PendaftaranController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $q = trim((string) $request->query('q', ''));
+
         $pendaftarans = Pendaftaran::query()
             ->with(['lowongan', 'mahasiswa'])
+            ->when($q !== '', function ($query) use ($q): void {
+                $query->where(function ($subQuery) use ($q): void {
+                    $subQuery->where('nama', 'like', "%{$q}%")
+                        ->orWhere('nim', 'like', "%{$q}%")
+                        ->orWhere('motivasi', 'like', "%{$q}%")
+                        ->orWhereHas('lowongan', fn ($lowonganQuery) => $lowonganQuery
+                            ->where('mata_kuliah', 'like', "%{$q}%")
+                            ->orWhere('kode', 'like', "%{$q}%"))
+                        ->orWhereHas('mahasiswa', fn ($userQuery) => $userQuery
+                            ->where('name', 'like', "%{$q}%")
+                            ->orWhere('email', 'like', "%{$q}%"));
+                });
+            })
             ->latest()
             ->get();
 
@@ -30,6 +47,22 @@ class PendaftaranController extends Controller
         $pendaftaran->load(['lowongan', 'mahasiswa']);
 
         return view('dosen.pendaftaran.show', compact('pendaftaran'));
+    }
+
+    public function showBerkas(Request $request, Pendaftaran $pendaftaran, string $jenis): StreamedResponse
+    {
+        $filePath = $jenis === 'cv' ? $pendaftaran->cv_path : $pendaftaran->transkrip_path;
+
+        abort_if(! $filePath || ! Storage::disk('public')->exists($filePath), 404, 'Berkas PDF tidak ditemukan.');
+
+        $headers = ['Content-Type' => 'application/pdf'];
+        $filename = basename($filePath);
+
+        if ($request->boolean('download')) {
+            return Storage::disk('public')->download($filePath, $filename, $headers);
+        }
+
+        return Storage::disk('public')->response($filePath, $filename, $headers);
     }
 
     public function verifikasiBerkas(Request $request, Pendaftaran $pendaftaran): JsonResponse|RedirectResponse
