@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Pendaftaran;
 use App\Models\Pengumuman;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -74,20 +75,38 @@ class PendaftaranStorageAndListTest extends TestCase
             ->assertSee('Transkrip Nilai / KSM');
     }
 
-    public function test_dosen_can_publish_an_application_decision(): void
+    public function test_dosen_must_make_a_final_decision_after_the_interview_passes(): void
     {
-        $pendaftaran = $this->createPendaftaran();
-
-        $response = $this->from('/dosen/pendaftar')->patch('/dosen/pendaftar/'.$pendaftaran->id.'/status', [
-            'status_seleksi' => 'disetujui',
-            'catatan_dosen' => 'Selamat, pendaftaran disetujui.',
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara selesai',
+            'waktu_wawancara' => now()->subHour(),
         ]);
 
-        $response->assertRedirect('/dosen/pendaftar');
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/hasil-wawancara', [
+            'hasil_wawancara' => 'lulus',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'status' => 'menunggu',
+            'status_seleksi' => 'menunggu',
+            'hasil_wawancara' => 'lulus',
+            'is_published' => false,
+        ]);
+
+        $finalResponse = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/keputusan-akhir', [
+            'status_seleksi' => 'disetujui',
+        ]);
+
+        $finalResponse->assertRedirect();
         $this->assertDatabaseHas('pendaftaran', [
             'id' => $pendaftaran->id,
             'status' => 'disetujui',
             'status_seleksi' => 'disetujui',
+            'hasil_wawancara' => 'lulus',
             'is_published' => true,
         ]);
     }
@@ -97,18 +116,59 @@ class PendaftaranStorageAndListTest extends TestCase
         $pendaftaran = $this->createPendaftaran([
             'status' => 'disetujui',
             'status_seleksi' => 'disetujui',
+            'hasil_wawancara' => 'lulus',
             'is_published' => true,
         ]);
 
-        $response = $this->patch('/dosen/pendaftar/'.$pendaftaran->id.'/status', [
-            'status_seleksi' => 'ditolak',
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/hasil-wawancara', [
+            'hasil_wawancara' => 'gagal',
+            'catatan_hasil_wawancara' => 'Tidak memenuhi kriteria wawancara.',
         ]);
 
         $response->assertConflict();
         $this->assertDatabaseHas('pendaftaran', [
             'id' => $pendaftaran->id,
             'status' => 'disetujui',
+            'hasil_wawancara' => 'lulus',
+        ]);
+    }
+
+    public function test_dosen_can_reject_at_the_final_decision_after_a_successful_interview(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara selesai',
+            'hasil_wawancara' => 'lulus',
+        ]);
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/keputusan-akhir', [
+            'status_seleksi' => 'ditolak',
+            'catatan_dosen' => 'Kuota penempatan untuk periode ini sudah terpenuhi.',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'hasil_wawancara' => 'lulus',
+            'status' => 'ditolak',
+            'status_seleksi' => 'ditolak',
+            'is_published' => true,
+        ]);
+    }
+
+    public function test_dosen_cannot_publish_an_application_through_the_old_direct_status_route(): void
+    {
+        $pendaftaran = $this->createPendaftaran();
+
+        $this->patch('/dosen/pendaftar/'.$pendaftaran->id.'/status', [
             'status_seleksi' => 'disetujui',
+        ])->assertNotFound();
+
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'status' => 'menunggu',
+            'is_published' => false,
         ]);
     }
 
@@ -130,7 +190,7 @@ class PendaftaranStorageAndListTest extends TestCase
         $this->assertDatabaseCount('pendaftaran', 0);
     }
 
-    public function test_dosen_cannot_approve_applicants_beyond_the_lowongan_quota(): void
+    public function test_dosen_cannot_accept_applicants_beyond_the_lowongan_quota(): void
     {
         $lowongan = $this->createLowongan(['kuota' => 1]);
         Pendaftaran::query()->create([
@@ -147,10 +207,18 @@ class PendaftaranStorageAndListTest extends TestCase
             'nim' => '202600011',
             'status' => 'menunggu',
             'status_seleksi' => 'menunggu',
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara selesai',
+            'waktu_wawancara' => now()->subHour(),
             'is_published' => false,
         ]);
 
-        $response = $this->patch('/dosen/pendaftar/'.$waiting->id.'/status', [
+        $this->post('/dosen/pendaftar/'.$waiting->id.'/hasil-wawancara', [
+            'hasil_wawancara' => 'lulus',
+        ])->assertRedirect();
+
+        $response = $this->post('/dosen/pendaftar/'.$waiting->id.'/keputusan-akhir', [
             'status_seleksi' => 'disetujui',
         ]);
 
@@ -242,36 +310,165 @@ class PendaftaranStorageAndListTest extends TestCase
             'berkas_diverifikasi' => false,
             'status_berkas' => 'ditolak',
             'catatan_berkas' => 'Format transkrip nilai belum memuat semester terbaru.',
+            'status' => 'ditolak',
+            'status_seleksi' => 'ditolak',
+            'is_published' => true,
         ]);
 
         $studentResponse = $this->get('/mahasiswa/status/'.$pendaftaran->id);
         $studentResponse->assertOk()
             ->assertSee('Format transkrip nilai belum memuat semester terbaru.')
-            ->assertSee('Kekurangan / Penolakan Berkas');
+            ->assertSee('Kekurangan / Penolakan Berkas')
+            ->assertSee('aria-label="Tahap gagal"', false)
+            ->assertSee('aria-label="Tahap tidak dilanjutkan"', false);
+
+        $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/verifikasi-berkas', [
+            'status' => 'diverifikasi',
+        ])->assertConflict();
     }
 
-    public function test_dosen_can_set_interview_schedule_and_location(): void
+    public function test_interview_cannot_be_scheduled_before_documents_are_verified(): void
     {
         $pendaftaran = $this->createPendaftaran();
 
         $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/wawancara', [
-            'jadwal_wawancara' => '2026-11-28T10:00',
+            'metode_wawancara' => 'langsung',
+            'waktu_wawancara' => now()->addDay()->format('Y-m-d\TH:i'),
             'lokasi_wawancara' => 'Lab Komputer 2',
-            'catatan_wawancara' => 'Bawa kartu mahasiswa',
+            'catatan_wawancara' => 'Bawa kartu mahasiswa dan hadir sepuluh menit lebih awal.',
+        ]);
+
+        $response->assertConflict();
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'jadwal_wawancara' => null,
+            'status' => 'menunggu',
+            'is_published' => false,
+        ]);
+    }
+
+    public function test_scheduling_an_interview_does_not_decide_the_application(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+        ]);
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/wawancara', [
+            'metode_wawancara' => 'online',
+            'waktu_wawancara' => now()->addDay()->format('Y-m-d\TH:i'),
+            'lokasi_wawancara' => 'https://meet.example.com/applicant',
+            'catatan_wawancara' => 'Siapkan koneksi internet stabil dan bergabung lima menit lebih awal.',
         ]);
 
         $response->assertSessionHas('success');
         $this->assertDatabaseHas('pendaftaran', [
             'id' => $pendaftaran->id,
-            'lokasi_wawancara' => 'Lab Komputer 2',
-            'catatan_wawancara' => 'Bawa kartu mahasiswa',
+            'metode_wawancara' => 'online',
+            'lokasi_wawancara' => 'https://meet.example.com/applicant',
+            'catatan_wawancara' => 'Siapkan koneksi internet stabil dan bergabung lima menit lebih awal.',
             'berkas_diverifikasi' => true,
+            'status' => 'menunggu',
+            'is_published' => false,
         ]);
 
         $studentResponse = $this->get('/mahasiswa/status/'.$pendaftaran->id);
         $studentResponse->assertOk()
-            ->assertSee('Jadwal Wawancara Seleksi')
-            ->assertSee('Lab Komputer 2');
+            ->assertSee('Notifikasi Wawancara')
+            ->assertSee('https://meet.example.com/applicant')
+            ->assertSee('Siapkan koneksi internet stabil dan bergabung lima menit lebih awal.')
+            ->assertSee('Daring')
+            ->assertSee('aria-label="Notifikasi wawancara"', false);
+
+        $this->get('/dosen/pendaftar/'.$pendaftaran->id)
+            ->assertOk()
+            ->assertSee('Edit data wawancara')
+            ->assertSee('x-show="editInterview"', false);
+    }
+
+    public function test_dosen_must_add_a_reason_when_interview_fails(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara selesai',
+            'waktu_wawancara' => now()->subHour(),
+        ]);
+
+        $response = $this->from('/dosen/pendaftar/'.$pendaftaran->id)->post(
+            '/dosen/pendaftar/'.$pendaftaran->id.'/hasil-wawancara',
+            ['hasil_wawancara' => 'gagal']
+        );
+
+        $response->assertSessionHasErrors('catatan_hasil_wawancara');
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'status' => 'menunggu',
+            'is_published' => false,
+            'hasil_wawancara' => null,
+        ]);
+    }
+
+    public function test_interview_result_can_be_saved_immediately_after_scheduling(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara mendatang',
+            'waktu_wawancara' => now()->addDay(),
+        ]);
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/hasil-wawancara', [
+            'hasil_wawancara' => 'lulus',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'status' => 'menunggu',
+            'is_published' => false,
+            'hasil_wawancara' => 'lulus',
+        ]);
+    }
+
+    public function test_interview_failure_rejects_the_whole_application(): void
+    {
+        $pendaftaran = $this->createPendaftaran([
+            'status_berkas' => 'diverifikasi',
+            'berkas_diverifikasi' => true,
+            'jadwal_wawancara' => 'Wawancara selesai',
+            'waktu_wawancara' => now()->subHour(),
+        ]);
+
+        $response = $this->post('/dosen/pendaftar/'.$pendaftaran->id.'/hasil-wawancara', [
+            'hasil_wawancara' => 'gagal',
+            'catatan_hasil_wawancara' => 'Jawaban belum memenuhi kriteria teknis.',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('pendaftaran', [
+            'id' => $pendaftaran->id,
+            'hasil_wawancara' => 'gagal',
+            'status' => 'ditolak',
+            'status_seleksi' => 'ditolak',
+            'is_published' => true,
+        ]);
+
+        $this->get('/mahasiswa/status/'.$pendaftaran->id)
+            ->assertOk()
+            ->assertSee('aria-label="Tahap gagal"', false)
+            ->assertSee('aria-label="Tahap tidak dilanjutkan"', false);
+    }
+
+    public function test_dosen_can_see_the_applicants_account_email(): void
+    {
+        $user = User::factory()->create(['name' => 'Aldo Mahasiswa', 'email' => 'aldo@example.test']);
+        $pendaftaran = $this->createPendaftaran(['user_id' => $user->id]);
+
+        $this->get('/dosen/pendaftar/'.$pendaftaran->id)
+            ->assertOk()
+            ->assertSee('aldo@example.test')
+            ->assertSee('mailto:aldo@example.test', false);
     }
 
     private function createLowongan(array $attributes = []): Pengumuman

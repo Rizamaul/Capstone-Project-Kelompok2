@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PendaftaranController extends Controller
@@ -17,7 +18,7 @@ class PendaftaranController extends Controller
     public function index(): View
     {
         $pendaftarans = Pendaftaran::query()
-            ->with('lowongan')
+            ->with(['lowongan', 'mahasiswa'])
             ->latest()
             ->get();
 
@@ -26,99 +27,172 @@ class PendaftaranController extends Controller
 
     public function show(Pendaftaran $pendaftaran): View
     {
-        $pendaftaran->load('lowongan');
+        $pendaftaran->load(['lowongan', 'mahasiswa']);
 
         return view('dosen.pendaftaran.show', compact('pendaftaran'));
     }
 
     public function verifikasiBerkas(Request $request, Pendaftaran $pendaftaran): JsonResponse|RedirectResponse
     {
-        $action = $request->input('status', 'diverifikasi');
         $validated = $request->validate([
             'status' => ['required', 'in:diverifikasi,ditolak'],
             'alasan' => ['nullable', 'required_if:status,ditolak', 'string', 'max:1000'],
         ]);
 
-        if ($action === 'ditolak') {
-            $pendaftaran->update([
-                'status_berkas' => 'ditolak',
-                'berkas_diverifikasi' => false,
-                'catatan_berkas' => $validated['alasan'] ?? 'Berkas persyaratan belum lengkap atau tidak valid.',
-                'waktu_verifikasi_berkas' => now(),
-            ]);
-            $msg = 'Berkas pendaftaran ditolak dengan alasan.';
-        } else {
-            $pendaftaran->update([
-                'status_berkas' => 'diverifikasi',
-                'berkas_diverifikasi' => true,
-                'catatan_berkas' => null,
-                'waktu_verifikasi_berkas' => now(),
-            ]);
-            $msg = 'Status berkas pendaftaran berhasil diverifikasi.';
-        }
+        $message = $validated['status'] === 'ditolak'
+            ? 'Berkas dan seluruh pendaftaran ditolak.'
+            : 'Status berkas pendaftaran berhasil diverifikasi.';
+
+        $pendaftaran = DB::transaction(function () use ($pendaftaran, $validated): Pendaftaran {
+            $currentPendaftaran = Pendaftaran::query()
+                ->lockForUpdate()
+                ->findOrFail($pendaftaran->id);
+
+            $this->ensureApplicationIsOpen($currentPendaftaran);
+
+            if ($validated['status'] === 'ditolak') {
+                $reason = $validated['alasan'];
+                $currentPendaftaran->update([
+                    'status_berkas' => 'ditolak',
+                    'berkas_diverifikasi' => false,
+                    'catatan_berkas' => $reason,
+                    'waktu_verifikasi_berkas' => now(),
+                    'status' => 'ditolak',
+                    'status_seleksi' => 'ditolak',
+                    'catatan_dosen' => $reason,
+                    'is_published' => true,
+                ]);
+            } else {
+                $currentPendaftaran->update([
+                    'status_berkas' => 'diverifikasi',
+                    'berkas_diverifikasi' => true,
+                    'catatan_berkas' => null,
+                    'waktu_verifikasi_berkas' => now(),
+                ]);
+            }
+
+            return $currentPendaftaran->refresh();
+        });
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json([
                 'success' => true,
                 'status_berkas' => $pendaftaran->status_berkas,
-                'message' => $msg,
+                'status' => $pendaftaran->status,
+                'is_published' => $pendaftaran->is_published,
+                'message' => $message,
                 'waktu' => $pendaftaran->waktu_verifikasi_berkas?->translatedFormat('d M Y, H:i'),
             ]);
         }
 
-        return back()->with('success', $msg);
+        return back()->with('success', $message);
     }
 
     public function aturWawancara(Request $request, Pendaftaran $pendaftaran): RedirectResponse
     {
         $validated = $request->validate([
-            'jadwal_wawancara' => ['required', 'string'],
-            'lokasi_wawancara' => ['required', 'string', 'max:255'],
-            'catatan_wawancara' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $rawJadwal = $validated['jadwal_wawancara'];
-        try {
-            $parsedDate = Carbon::parse($rawJadwal);
-            $formattedJadwal = $parsedDate->translatedFormat('l, d M Y, H:i') . ' WIB';
-        } catch (\Throwable $e) {
-            $formattedJadwal = $rawJadwal;
-        }
-
-        $pendaftaran->update([
-            'jadwal_wawancara' => $formattedJadwal,
-            'lokasi_wawancara' => $validated['lokasi_wawancara'],
-            'catatan_wawancara' => $validated['catatan_wawancara'] ?? null,
-            'berkas_diverifikasi' => true,
-            'status_berkas' => $pendaftaran->status_berkas === 'ditolak' ? 'ditolak' : 'diverifikasi',
-            'waktu_verifikasi_berkas' => $pendaftaran->waktu_verifikasi_berkas ?? now(),
-        ]);
-
-        return back()->with('success', 'Jadwal dan lokasi wawancara berhasil disimpan.');
-    }
-
-    public function updateStatus(Request $request, Pendaftaran $pendaftaran): RedirectResponse
-    {
-        $validated = $request->validate([
-            'status_seleksi' => ['required', 'in:disetujui,ditolak'],
-            'catatan_dosen' => ['nullable', 'string', 'max:2000'],
+            'metode_wawancara' => ['required', Rule::in(['langsung', 'online'])],
+            'waktu_wawancara' => ['required', 'date', 'after:now'],
+            'lokasi_wawancara' => [
+                'required',
+                'string',
+                'max:500',
+                Rule::when($request->input('metode_wawancara') === 'online', ['url']),
+            ],
+            'catatan_wawancara' => ['required', 'string', 'min:20', 'max:2000'],
         ]);
 
         DB::transaction(function () use ($pendaftaran, $validated): void {
-            $lowongan = Pengumuman::query()
-                ->lockForUpdate()
-                ->findOrFail($pendaftaran->lowongan_id);
             $currentPendaftaran = Pendaftaran::query()
                 ->lockForUpdate()
                 ->findOrFail($pendaftaran->id);
 
-            abort_if(
-                $currentPendaftaran->is_published || $currentPendaftaran->status !== 'menunggu',
+            $this->ensureApplicationIsOpen($currentPendaftaran);
+
+            abort_unless(
+                $currentPendaftaran->status_berkas === 'diverifikasi' || $currentPendaftaran->berkas_diverifikasi,
                 409,
-                'Pendaftaran ini sudah ditinjau.'
+                'Verifikasi berkas harus selesai sebelum wawancara dijadwalkan.'
+            );
+            abort_if(
+                $currentPendaftaran->hasil_wawancara !== null,
+                409,
+                'Hasil wawancara sudah ditetapkan.'
             );
 
+            $waktuWawancara = Carbon::parse($validated['waktu_wawancara']);
+            $currentPendaftaran->update([
+                'jadwal_wawancara' => $waktuWawancara->translatedFormat('l, d M Y, H:i'),
+                'metode_wawancara' => $validated['metode_wawancara'],
+                'waktu_wawancara' => $waktuWawancara,
+                'lokasi_wawancara' => $validated['lokasi_wawancara'],
+                'catatan_wawancara' => $validated['catatan_wawancara'],
+            ]);
+        });
+
+        return back()->with('success', 'Jadwal wawancara berhasil disimpan. Pendaftaran tetap menunggu hasil wawancara.');
+    }
+
+    public function simpanHasilWawancara(Request $request, Pendaftaran $pendaftaran): RedirectResponse
+    {
+        $validated = $request->validate([
+            'hasil_wawancara' => ['required', Rule::in(['lulus', 'gagal'])],
+            'catatan_hasil_wawancara' => ['nullable', 'required_if:hasil_wawancara,gagal', 'string', 'min:10', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($pendaftaran, $validated): void {
+            $currentPendaftaran = Pendaftaran::query()
+                ->lockForUpdate()
+                ->findOrFail($pendaftaran->id);
+
+            $this->ensureApplicationIsOpen($currentPendaftaran);
+            abort_unless(
+                $currentPendaftaran->status_berkas === 'diverifikasi' || $currentPendaftaran->berkas_diverifikasi,
+                409,
+                'Verifikasi berkas harus selesai sebelum hasil wawancara disimpan.'
+            );
+            abort_if($currentPendaftaran->jadwal_wawancara === null, 409, 'Jadwalkan wawancara sebelum menetapkan hasil.');
+            abort_if($currentPendaftaran->hasil_wawancara !== null, 409, 'Hasil wawancara sudah ditetapkan.');
+
+            $isPassed = $validated['hasil_wawancara'] === 'lulus';
+
+            $currentPendaftaran->update([
+                'hasil_wawancara' => $validated['hasil_wawancara'],
+                'catatan_hasil_wawancara' => $validated['catatan_hasil_wawancara'] ?? null,
+                'status' => $isPassed ? 'menunggu' : 'ditolak',
+                'status_seleksi' => $isPassed ? 'menunggu' : 'ditolak',
+                'catatan_dosen' => $isPassed ? null : $validated['catatan_hasil_wawancara'],
+                'is_published' => ! $isPassed,
+            ]);
+        });
+
+        return back()->with(
+            'success',
+            $validated['hasil_wawancara'] === 'lulus'
+                ? 'Hasil wawancara dicatat lulus. Tentukan keputusan akhir pendaftaran.'
+                : 'Hasil wawancara tidak lulus dan seluruh pendaftaran telah ditolak.'
+        );
+    }
+
+    public function simpanKeputusanAkhir(Request $request, Pendaftaran $pendaftaran): RedirectResponse
+    {
+        $validated = $request->validate([
+            'status_seleksi' => ['required', Rule::in(['disetujui', 'ditolak'])],
+            'catatan_dosen' => ['nullable', 'required_if:status_seleksi,ditolak', 'string', 'min:10', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($pendaftaran, $validated): void {
+            $currentPendaftaran = Pendaftaran::query()
+                ->lockForUpdate()
+                ->findOrFail($pendaftaran->id);
+
+            $this->ensureApplicationIsOpen($currentPendaftaran);
+            abort_unless($currentPendaftaran->hasil_wawancara === 'lulus', 409, 'Wawancara harus dinyatakan lulus sebelum keputusan akhir.');
+
             if ($validated['status_seleksi'] === 'disetujui') {
+                $lowongan = Pengumuman::query()
+                    ->lockForUpdate()
+                    ->findOrFail($currentPendaftaran->lowongan_id);
                 $terisi = $lowongan->pendaftarans()
                     ->where('status_seleksi', 'disetujui')
                     ->where('is_published', true)
@@ -135,6 +209,15 @@ class PendaftaranController extends Controller
             ]);
         });
 
-        return back()->with('success', 'Keputusan pendaftaran berhasil diumumkan.');
+        return back()->with('success', 'Keputusan akhir pendaftaran berhasil diumumkan.');
+    }
+
+    private function ensureApplicationIsOpen(Pendaftaran $pendaftaran): void
+    {
+        abort_if(
+            $pendaftaran->is_published || $pendaftaran->status !== 'menunggu',
+            409,
+            'Pendaftaran ini sudah ditinjau dan tidak dapat diubah.'
+        );
     }
 }

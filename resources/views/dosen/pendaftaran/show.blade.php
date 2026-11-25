@@ -6,12 +6,20 @@
     $transkripUrl = $pendaftaran->transkrip_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($pendaftaran->transkrip_path) : null;
     $defaultPdfUrl = $cvUrl ?: $transkripUrl;
     $defaultPdfTitle = $cvUrl ? 'Curriculum Vitae (CV) - ' . $pendaftaran->nama : ($transkripUrl ? 'Transkrip Nilai / KSM - ' . $pendaftaran->nama : '');
+    $applicationOpen = $pendaftaran->status === 'menunggu' && ! $pendaftaran->is_published;
+    $documentsVerified = $pendaftaran->status_berkas === 'diverifikasi' || $pendaftaran->berkas_diverifikasi;
+    $hasInterviewErrors = $errors->has('metode_wawancara')
+        || $errors->has('waktu_wawancara')
+        || $errors->has('lokasi_wawancara')
+        || $errors->has('catatan_wawancara');
+    $showInterviewEditor = ! $pendaftaran->jadwal_wawancara || $hasInterviewErrors;
 @endphp
 
 <div class="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto" 
      x-data="{ 
          showPdfModal: false,
          showRejectModal: false,
+         editInterview: @js($showInterviewEditor),
          activePdfTitle: @js($defaultPdfTitle),
          activePdfUrl: @js($defaultPdfUrl),
          openPreview(title, url) {
@@ -32,31 +40,9 @@
                 <p class="text-sm text-gray-500">Evaluasi nilai prasyarat, esai motivasi, dan periksa berkas KSM/transkrip mahasiswa secara langsung.</p>
             </div>
             
-            @if($pendaftaran->status === 'menunggu')
-                <div class="flex items-center gap-3">
-                    <form action="{{ route('dosen.pendaftar.status', $pendaftaran) }}" method="POST" onsubmit="return confirm('Tolak pelamar ini?')">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="status_seleksi" value="ditolak">
-                        <button type="submit" class="px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-semibold hover:bg-red-100 transition-colors cursor-pointer">
-                            ✕ Tolak Pelamar
-                        </button>
-                    </form>
-
-                    <form action="{{ route('dosen.pendaftar.status', $pendaftaran) }}" method="POST" onsubmit="return confirm('Terima pelamar ini sebagai asisten?')">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="status_seleksi" value="disetujui">
-                        <button type="submit" class="px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm cursor-pointer">
-                            ✓ Terima Sebagai Asisten
-                        </button>
-                    </form>
-                </div>
-            @else
-                <span class="px-4 py-2 rounded-xl text-xs font-bold {{ $pendaftaran->status === 'disetujui' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
-                    Status Seleksi: {{ ucfirst($pendaftaran->status) }}
-                </span>
-            @endif
+            <span class="px-4 py-2 rounded-xl text-xs font-bold {{ $pendaftaran->status === 'disetujui' ? 'bg-emerald-50 text-emerald-700' : ($pendaftaran->status === 'ditolak' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700') }}">
+                Status Pendaftaran: {{ ucfirst($pendaftaran->status) }}
+            </span>
         </div>
     </div>
 
@@ -64,6 +50,13 @@
         <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 shadow-xs flex items-center gap-2">
             <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">✓</span>
             <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-xs text-red-800" role="alert">
+            @foreach($errors->all() as $error)
+                <p>{{ $error }}</p>
+            @endforeach
         </div>
     @endif
 
@@ -87,6 +80,15 @@
                         <h3 class="text-lg font-bold text-gray-900">{{ $pendaftaran->nama }}</h3>
                         <p class="text-xs text-gray-500">NIM : <span class="font-mono font-semibold text-gray-800">{{ $pendaftaran->nim }}</span></p>
                         <p class="text-xs text-blue-600 font-medium mt-1">Mata Kuliah Dilamar: {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan' }} ({{ $pendaftaran->lowongan?->kode ?? '-' }})</p>
+                        @if($pendaftaran->mahasiswa)
+                            <p class="mt-2 text-xs text-gray-600">
+                                Akun pelamar:
+                                <span class="font-semibold">{{ $pendaftaran->mahasiswa->name }}</span>
+                                · <a class="font-semibold text-blue-700 hover:underline" href="mailto:{{ $pendaftaran->mahasiswa->email }}">{{ $pendaftaran->mahasiswa->email }}</a>
+                            </p>
+                        @else
+                            <p class="mt-2 text-xs text-amber-700">Akun pelamar belum terhubung, sehingga email kontak tidak tersedia.</p>
+                        @endif
                     </div>
                 </div>
 
@@ -132,14 +134,21 @@
                 <div class="flex items-center justify-between pb-3 border-b border-gray-100">
                     <div>
                         <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                            <span>🗓</span> Atur Jadwal & Lokasi Wawancara
+                            <span>🗓</span> Jadwal dan Hasil Wawancara
                         </h2>
-                        <p class="text-xs text-gray-500 mt-0.5">Pilih tanggal dan jam interview menggunakan kalender, serta tentukan lokasi seleksi.</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Menjadwalkan wawancara tidak otomatis meluluskan atau menggagalkan pelamar.</p>
                     </div>
                     @if($pendaftaran->jadwal_wawancara)
-                        <span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#1E5EFF] font-bold text-xs border border-blue-100">
-                            Terjadwal
-                        </span>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-1 rounded-full bg-blue-50 text-[#1E5EFF] font-bold text-xs border border-blue-100">
+                                Terjadwal
+                            </span>
+                            @if($applicationOpen && ! $pendaftaran->hasil_wawancara)
+                                <button type="button" @click="editInterview = !editInterview" class="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50">
+                                    Edit data wawancara
+                                </button>
+                            @endif
+                        </div>
                     @endif
                 </div>
 
@@ -148,6 +157,10 @@
                         <div class="flex items-center justify-between">
                             <span class="text-gray-500">Waktu Wawancara:</span>
                             <span class="font-bold text-gray-900">{{ $pendaftaran->jadwal_wawancara }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-500">Metode:</span>
+                            <span class="font-bold text-gray-900">{{ $pendaftaran->metode_wawancara === 'online' ? 'Daring' : ($pendaftaran->metode_wawancara === 'langsung' ? 'Tatap muka' : 'Belum dicatat') }}</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-500">Lokasi / Ruang:</span>
@@ -162,46 +175,86 @@
                     </div>
                 @endif
 
-                <form action="{{ route('dosen.pendaftar.wawancara', $pendaftaran) }}" method="POST" class="space-y-4 pt-1">
-                    @csrf
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
-                                📅 Waktu Pelaksanaan Wawancara (Kalender)
-                            </label>
-                            <input type="datetime-local" 
-                                   name="jadwal_wawancara" 
-                                   required 
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E5EFF] bg-white">
-                            <p class="text-[10px] text-gray-400 mt-1">Pilih tanggal dan jam melalui ikon kalender.</p>
+                @if($applicationOpen && ! $pendaftaran->hasil_wawancara && $documentsVerified)
+                    <div x-show="editInterview" x-cloak>
+                    <form action="{{ route('dosen.pendaftar.wawancara', $pendaftaran) }}" method="POST" class="space-y-4 pt-1">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="metode_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Metode Wawancara</label>
+                                <select id="metode_wawancara" name="metode_wawancara" required class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs">
+                                    <option value="">Pilih metode</option>
+                                    <option value="langsung" @selected(old('metode_wawancara', $pendaftaran->metode_wawancara) === 'langsung')>Tatap muka</option>
+                                    <option value="online" @selected(old('metode_wawancara', $pendaftaran->metode_wawancara) === 'online')>Daring</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="waktu_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Tanggal dan waktu</label>
+                                <input id="waktu_wawancara" type="datetime-local" name="waktu_wawancara" value="{{ old('waktu_wawancara', $pendaftaran->waktu_wawancara?->format('Y-m-d\\TH:i')) }}" required class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">
-                                📍 Lokasi / Ruang Wawancara
-                            </label>
-                            <input type="text" 
-                                   name="lokasi_wawancara" 
-                                   value="{{ old('lokasi_wawancara', $pendaftaran->lokasi_wawancara) }}" 
-                                   required 
-                                   placeholder="Contoh: Ruang Dosen Gd. A / Lab Komputer 2" 
-                                   class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E5EFF]">
-                            <p class="text-[10px] text-gray-400 mt-1">Tuliskan nama ruangan atau tautan online meeting.</p>
+                            <label for="lokasi_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Ruang wawancara atau tautan pertemuan</label>
+                            <input id="lokasi_wawancara" type="text" name="lokasi_wawancara" value="{{ old('lokasi_wawancara', $pendaftaran->lokasi_wawancara) }}" required maxlength="500" placeholder="Ruang dosen / https://..." class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs">
                         </div>
+                        <div>
+                            <label for="catatan_wawancara" class="mb-1 block text-xs font-bold text-gray-700">Instruksi terperinci untuk pelamar</label>
+                            <textarea id="catatan_wawancara" name="catatan_wawancara" rows="3" required minlength="20" maxlength="2000" placeholder="Jelaskan persiapan, dokumen/peralatan yang dibawa, dan petunjuk bergabung atau menuju lokasi." class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs">{{ old('catatan_wawancara', $pendaftaran->catatan_wawancara) }}</textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit" class="rounded-xl bg-[#1E5EFF] px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700">Simpan Jadwal</button>
+                        </div>
+                    </form>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Catatan / Instruksi Wawancara (Opsional)</label>
-                        <input type="text" 
-                               name="catatan_wawancara" 
-                               value="{{ old('catatan_wawancara', $pendaftaran->catatan_wawancara) }}" 
-                               placeholder="Contoh: Harap hadir 10 menit sebelum jadwal dan membawa laptop." 
-                               class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#1E5EFF]">
+                @elseif(! $documentsVerified && $applicationOpen)
+                    <p class="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">Jadwal wawancara dapat dibuat setelah berkas diverifikasi.</p>
+                @endif
+
+                @if($pendaftaran->hasil_wawancara)
+                    <div class="rounded-xl {{ $pendaftaran->hasil_wawancara === 'lulus' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }} p-4 text-xs">
+                        <p class="font-bold">Hasil wawancara: {{ $pendaftaran->hasil_wawancara === 'lulus' ? 'Lulus' : 'Tidak lulus' }}</p>
+                        @if($pendaftaran->catatan_hasil_wawancara)
+                            <p class="mt-1 whitespace-pre-line">{{ $pendaftaran->catatan_hasil_wawancara }}</p>
+                        @endif
                     </div>
-                    <div class="flex justify-end">
-                        <button type="submit" class="px-5 py-2.5 bg-[#1E5EFF] hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer">
-                            {{ $pendaftaran->jadwal_wawancara ? 'Perbarui Jadwal Wawancara' : 'Simpan Jadwal Wawancara' }}
-                        </button>
+                    @if($applicationOpen && $pendaftaran->hasil_wawancara === 'lulus')
+                    <div class="space-y-3 border-t border-gray-100 pt-4">
+                        <p class="text-xs font-bold text-gray-800">Keputusan akhir</p>
+                        <form action="{{ route('dosen.pendaftar.keputusan-akhir', $pendaftaran) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="status_seleksi" value="disetujui">
+                            <button type="submit" class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700">Terima pelamar</button>
+                        </form>
+                        <form action="{{ route('dosen.pendaftar.keputusan-akhir', $pendaftaran) }}" method="POST" class="space-y-2">
+                            @csrf
+                            <input type="hidden" name="status_seleksi" value="ditolak">
+                            <label for="catatan_dosen" class="block text-xs font-semibold text-gray-700">Alasan keputusan akhir tidak menerima</label>
+                            <textarea id="catatan_dosen" name="catatan_dosen" rows="2" required minlength="10" maxlength="2000" class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs"></textarea>
+                            <button type="submit" class="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-700 hover:bg-red-100">Tolak pada keputusan akhir</button>
+                        </form>
                     </div>
-                </form>
+                    @endif
+                @elseif($applicationOpen && $pendaftaran->jadwal_wawancara)
+                    <div class="space-y-3 border-t border-gray-100 pt-4">
+                        <p class="text-xs font-bold text-gray-800">Hasil wawancara</p>
+                        <form action="{{ route('dosen.pendaftar.hasil-wawancara', $pendaftaran) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="hasil_wawancara" value="lulus">
+                            <button type="submit" class="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700">Wawancara berhasil</button>
+                        </form>
+                        <form action="{{ route('dosen.pendaftar.hasil-wawancara', $pendaftaran) }}" method="POST" class="space-y-2">
+                            @csrf
+                            <input type="hidden" name="hasil_wawancara" value="gagal">
+                            <label for="catatan_hasil_wawancara" class="block text-xs font-semibold text-gray-700">Alasan wawancara tidak berhasil</label>
+                            <textarea id="catatan_hasil_wawancara" name="catatan_hasil_wawancara" rows="2" required minlength="10" maxlength="2000" class="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs"></textarea>
+                            <button type="submit" class="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-700 hover:bg-red-100">Wawancara tidak berhasil</button>
+                        </form>
+                    </div>
+                @endif
+
+                @if(! $applicationOpen)
+                    <p class="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">Pendaftaran telah ditutup; tahap ini tidak dapat diubah.</p>
+                @endif
             </div>
 
         </div>
@@ -216,6 +269,9 @@
                         </h2>
                         <p class="text-xs text-gray-500 mt-0.5">Tinjau berkas lalu verifikasi kelengkapannya secara manual.</p>
                     </div>
+                    @if($pendaftaran->status_berkas === 'ditolak')
+                        <span class="rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold text-red-700">Pendaftaran ditolak</span>
+                    @endif
                 </div>
 
                 <!-- Status Verifikasi Berkas Saat Ini -->
@@ -242,6 +298,7 @@
                 </div>
 
                 <!-- 2 TOMBOL MANUAL VERIFIKASI (CEKLIST ✓ DAN SILANG ✕) -->
+                @if($applicationOpen && ! $documentsVerified)
                 <div>
                     <p class="text-xs font-bold text-gray-700 mb-2">Tindakan Verifikasi Berkas:</p>
                     <div class="flex items-center gap-3">
@@ -269,6 +326,9 @@
                         </div>
                     </div>
                 </div>
+                @elseif($pendaftaran->status_berkas === 'ditolak')
+                    <p class="rounded-xl bg-red-50 p-3 text-xs text-red-800">Penolakan berkas telah menolak seluruh pendaftaran.</p>
+                @endif
 
                 <!-- DAFTAR DOKUMEN BERKAS -->
                 <div class="space-y-3 pt-2">

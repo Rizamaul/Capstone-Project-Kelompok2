@@ -35,14 +35,18 @@ class StatusController extends Controller
         $statusText = match ($status) {
             'disetujui' => 'Pendaftaran disetujui',
             'ditolak' => 'Pendaftaran ditolak',
-            default => 'Menunggu keputusan dosen',
+            default => $record->hasil_wawancara === 'lulus'
+                ? 'Menunggu keputusan akhir dosen'
+                : 'Menunggu keputusan dosen',
         };
         $isReviewed = $record->is_published;
         
         $statusBerkas = $record->status_berkas ?? ($record->berkas_diverifikasi ? 'diverifikasi' : 'menunggu');
-        $isVerified = ($statusBerkas === 'diverifikasi' || $isReviewed);
+        $isVerified = $statusBerkas === 'diverifikasi' || $record->berkas_diverifikasi;
         $isRejectedBerkas = ($statusBerkas === 'ditolak');
         $hasInterview = !empty($record->jadwal_wawancara);
+        $interviewFailed = $record->hasil_wawancara === 'gagal';
+        $finalDecisionRejected = $isReviewed && $status === 'ditolak' && ! $isRejectedBerkas && ! $interviewFailed;
 
         $pendaftaran = [
             'id' => $record->id,
@@ -62,8 +66,12 @@ class StatusController extends Controller
             'status_berkas' => $statusBerkas,
             'catatan_berkas' => $record->catatan_berkas,
             'jadwal_wawancara' => $record->jadwal_wawancara,
+            'metode_wawancara' => $record->metode_wawancara,
+            'waktu_wawancara' => $record->waktu_wawancara,
             'lokasi_wawancara' => $record->lokasi_wawancara,
             'catatan_wawancara' => $record->catatan_wawancara,
+            'hasil_wawancara' => $record->hasil_wawancara,
+            'catatan_hasil_wawancara' => $record->catatan_hasil_wawancara,
         ];
 
         $langkah = [
@@ -81,25 +89,43 @@ class StatusController extends Controller
                     : ($isRejectedBerkas ? 'Berkas ditolak: '.($record->catatan_berkas ?: 'Dokumen tidak memenuhi persyaratan.') : 'Dosen belum meninjau berkas pendaftaran.'),
                 'waktu' => $isVerified ? ($record->waktu_verifikasi_berkas?->translatedFormat('d M Y, H:i') ?? 'Selesai') : ($isRejectedBerkas ? 'Ditolak' : 'Belum'),
                 'selesai' => $isVerified,
-                'status_langkah' => $isVerified ? 'selesai' : ($isRejectedBerkas ? 'ditolak' : 'menunggu'),
+                'status_langkah' => $isRejectedBerkas ? 'gagal' : ($isVerified ? 'selesai' : 'menunggu'),
             ],
             [
                 'judul' => 'Seleksi / Interview',
-                'deskripsi' => $hasInterview
-                    ? 'Wawancara dijadwalkan: '.$record->jadwal_wawancara.' di '.$record->lokasi_wawancara
-                    : ($status === 'disetujui'
-                        ? 'Pendaftaran disetujui.'
-                        : ($status === 'ditolak' ? 'Pendaftaran tidak dilanjutkan.' : 'Pendaftaran belum disetujui.')),
-                'waktu' => $hasInterview ? 'Dijadwalkan' : ($isReviewed ? 'Selesai' : 'Belum'),
-                'selesai' => (bool) ($hasInterview || $isReviewed),
-                'status_langkah' => ($hasInterview || $isReviewed) ? 'selesai' : 'menunggu',
+                'deskripsi' => $isRejectedBerkas
+                    ? 'Tidak dilanjutkan karena verifikasi berkas gagal.'
+                    : ($interviewFailed
+                        ? 'Wawancara tidak berhasil: '.($record->catatan_hasil_wawancara ?: 'Pendaftaran dihentikan.')
+                        : ($record->hasil_wawancara === 'lulus'
+                            ? 'Wawancara berhasil. Menunggu keputusan akhir dosen.'
+                            : ($hasInterview
+                                ? 'Jadwal wawancara tersedia pada notifikasi di halaman ini.'
+                                : 'Wawancara belum dijadwalkan.'))),
+                'waktu' => $isRejectedBerkas || $interviewFailed ? 'Tidak dilanjutkan' : ($record->hasil_wawancara !== null ? 'Selesai' : ($hasInterview ? 'Jadwal tersedia' : 'Belum')),
+                'selesai' => $record->hasil_wawancara === 'lulus',
+                'status_langkah' => $isRejectedBerkas
+                    ? 'dilewati'
+                    : ($interviewFailed
+                        ? 'gagal'
+                        : ($record->hasil_wawancara === 'lulus' ? 'selesai' : ($hasInterview ? 'notifikasi' : 'menunggu'))),
             ],
             [
                 'judul' => 'Hasil akhir',
-                'deskripsi' => $isReviewed ? $statusText : 'Pendaftaran belum disetujui',
-                'waktu' => $isReviewed ? $record->updated_at?->translatedFormat('d M Y, H:i') : 'Belum',
+                'deskripsi' => $isRejectedBerkas
+                    ? 'Tidak diproses karena berkas ditolak.'
+                    : ($interviewFailed
+                        ? 'Tidak diproses karena wawancara tidak berhasil.'
+                        : ($isReviewed ? $statusText : 'Menunggu keputusan akhir dosen.')),
+                'waktu' => $isRejectedBerkas || $interviewFailed
+                    ? 'Tidak dilanjutkan'
+                    : ($isReviewed ? $record->updated_at?->translatedFormat('d M Y, H:i') : 'Belum'),
                 'selesai' => $isReviewed,
-                'status_langkah' => $isReviewed ? ($status === 'disetujui' ? 'selesai' : 'ditolak') : 'menunggu',
+                'status_langkah' => $isRejectedBerkas || $interviewFailed
+                    ? 'dilewati'
+                    : ($isReviewed
+                        ? ($status === 'disetujui' ? 'selesai' : ($finalDecisionRejected ? 'gagal' : 'dilewati'))
+                        : 'menunggu'),
             ],
         ];
 

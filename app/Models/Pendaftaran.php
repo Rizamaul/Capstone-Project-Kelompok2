@@ -27,6 +27,10 @@ class Pendaftaran extends Model
         'jadwal_wawancara',
         'lokasi_wawancara',
         'catatan_wawancara',
+        'metode_wawancara',
+        'waktu_wawancara',
+        'hasil_wawancara',
+        'catatan_hasil_wawancara',
         'status',
         'catatan_dosen',
         'status_seleksi',
@@ -38,6 +42,7 @@ class Pendaftaran extends Model
         'is_published' => 'boolean',
         'berkas_diverifikasi' => 'boolean',
         'waktu_verifikasi_berkas' => 'datetime',
+        'waktu_wawancara' => 'datetime',
     ];
 
     public function lowongan(): BelongsTo

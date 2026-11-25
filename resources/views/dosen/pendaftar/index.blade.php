@@ -4,7 +4,7 @@
 <div class="mx-auto max-w-7xl pb-16">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-[#2058B2]">Pendaftar Asisten Praktikum</h1>
-        <p class="mt-1 text-sm text-gray-500">Tinjau formulir dan umumkan keputusan seleksi.</p>
+        <p class="mt-1 text-sm text-gray-500">Tinjau berkas, hubungi pelamar, dan kelola tahapan wawancara.</p>
     </div>
 
     @if(session('success'))
@@ -42,6 +42,14 @@
                         @endif
                     </div>
                     <p class="mt-1 text-sm text-gray-500">NIM {{ $pendaftaran->nim }} · {{ $pendaftaran->lowongan?->mata_kuliah ?? 'Lowongan dihapus' }}</p>
+                    @if($pendaftaran->mahasiswa)
+                        <p class="mt-1 text-xs text-gray-600">
+                            {{ $pendaftaran->mahasiswa->name }} ·
+                            <a href="mailto:{{ $pendaftaran->mahasiswa->email }}" onclick="event.stopPropagation()" class="font-semibold text-blue-700 hover:underline">{{ $pendaftaran->mahasiswa->email }}</a>
+                        </p>
+                    @else
+                        <p class="mt-1 text-xs text-amber-700">Akun pelamar belum terhubung; kontak akun belum tersedia.</p>
+                    @endif
                     <p class="mt-3 whitespace-pre-line text-sm text-gray-700">{{ $pendaftaran->motivasi }}</p>
 
                     @if($pendaftaran->jadwal_wawancara)
@@ -49,6 +57,7 @@
                             <p class="font-bold flex items-center gap-1.5">
                                 <span>🗓</span> Jadwal Wawancara: {{ $pendaftaran->jadwal_wawancara }}
                             </p>
+                            <p class="text-blue-800 text-[11px]">Metode: {{ $pendaftaran->metode_wawancara === 'online' ? 'Daring' : ($pendaftaran->metode_wawancara === 'langsung' ? 'Tatap muka' : 'Belum dicatat') }}</p>
                             @if($pendaftaran->lokasi_wawancara)
                                 <p class="text-blue-800 text-[11px]">📍 Lokasi: {{ $pendaftaran->lokasi_wawancara }}</p>
                             @endif
@@ -60,25 +69,9 @@
                     @endif
                 </div>
 
-                @if(! $pendaftaran->is_published)
-                    <form action="{{ route('dosen.pendaftar.status', $pendaftaran) }}" 
-                          method="POST" 
-                          onclick="event.stopPropagation()" 
-                          class="w-full space-y-3 lg:max-w-sm shrink-0">
-                        @csrf
-                        @method('PATCH')
-                        <label class="block">
-                            <span class="mb-1 block text-sm font-semibold text-gray-700">Keputusan Seleksi</span>
-                            <select name="status_seleksi" required class="w-full rounded-lg border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500 bg-white">
-                                <option value="">Pilih keputusan</option>
-                                <option value="disetujui" @selected(old('status_seleksi') === 'disetujui')>Setujui</option>
-                                <option value="ditolak" @selected(old('status_seleksi') === 'ditolak')>Tolak</option>
-                            </select>
-                        </label>
-                        <textarea name="catatan_dosen" rows="2" maxlength="2000" placeholder="Catatan (opsional)" class="w-full rounded-lg border-gray-200 text-sm focus:border-blue-500 focus:ring-blue-500">{{ old('catatan_dosen') }}</textarea>
-                        <button type="submit" class="w-full rounded-lg bg-[#2058B2] px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 cursor-pointer">Simpan Keputusan</button>
-                    </form>
-                @endif
+                <a href="{{ route('dosen.pendaftar.show', $pendaftaran) }}" onclick="event.stopPropagation()" class="shrink-0 rounded-lg bg-[#2058B2] px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-blue-700">
+                    Buka Peninjauan
+                </a>
             </div>
         </article>
     @empty

@@ -134,14 +134,17 @@ Route::prefix('dosen')->name('dosen.')->group(function () {
     Route::get('/pendaftar/{pendaftaran}', [DosenPendaftaran::class, 'show'])
         ->name('pendaftar.show');
 
-    Route::patch('/pendaftar/{pendaftaran}/status', [DosenPendaftaran::class, 'updateStatus'])
-        ->name('pendaftar.status');
-
     Route::post('/pendaftar/{pendaftaran}/verifikasi-berkas', [DosenPendaftaran::class, 'verifikasiBerkas'])
         ->name('pendaftar.verifikasi-berkas');
 
     Route::post('/pendaftar/{pendaftaran}/wawancara', [DosenPendaftaran::class, 'aturWawancara'])
         ->name('pendaftar.wawancara');
+
+    Route::post('/pendaftar/{pendaftaran}/hasil-wawancara', [DosenPendaftaran::class, 'simpanHasilWawancara'])
+        ->name('pendaftar.hasil-wawancara');
+
+    Route::post('/pendaftar/{pendaftaran}/keputusan-akhir', [DosenPendaftaran::class, 'simpanKeputusanAkhir'])
+        ->name('pendaftar.keputusan-akhir');
 
     Route::get('/notifikasi', fn () => view('dosen.notifikasi.index'))
         ->name('notifikasi');
